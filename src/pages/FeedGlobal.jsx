@@ -1,5 +1,8 @@
-import { useState } from 'react'
+// src/pages/FeedGlobal.jsx
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { postService } from '../services/postService'
+import Swal from 'sweetalert2'
 import {
   Heart,
   MessageCircle,
@@ -7,223 +10,382 @@ import {
   Megaphone,
   CalendarDays,
   Send,
+  Loader2,
+  Check,
+  AlertCircle,
+  Image as ImageIcon,
+  X,
+  Trash2,
+  ZoomIn
 } from 'lucide-react'
 
 export default function FeedGlobal() {
   const { user } = useAuth()
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [novoPost, setNovoPost] = useState('')
+  const [tipoPost, setTipoPost] = useState(null)
+  const [mostrarComentarios, setMostrarComentarios] = useState({})
+  const [novoComentario, setNovoComentario] = useState({})
+  const [mostrarModal, setMostrarModal] = useState(false)
+  const [mensagemModal, setMensagemModal] = useState('')
+  const [tipoModal, setTipoModal] = useState('success')
+  const [postando, setPostando] = useState(false)
+  const [imagensSelecionadas, setImagensSelecionadas] = useState([])
+  const [uploadingImagens, setUploadingImagens] = useState(false)
+  const [imagemZoom, setImagemZoom] = useState(null)
+  const fileInputRef = useRef(null)
+  const [deletando, setDeletando] = useState({})
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      autor: 'Maria Silva',
-      avatar: 'M',
-      tempo: 'Há 2 horas',
-      tipo: null,
-      conteudo:
-        'Bom dia, irmãos! Que o Senhor abençoe cada um de vocês neste novo dia. "Este é o dia que o Senhor fez; regozijemo-nos e alegremo-nos nele." Salmos 118:24',
-      curtidas: 42,
-      comentarios: 8,
-      curtido: false,
-      comentariosLista: [],
-    },
+  useEffect(() => {
+    carregarPosts()
+  }, [])
 
-    {
-      id: 2,
-      autor: 'João Santos',
-      avatar: 'J',
-      tempo: 'Há 5 horas',
-      tipo: 'anuncio',
-      conteudo:
-        'Culto de oração hoje às 19h! Venham todos participar. Local: Igreja Central',
-      curtidas: 28,
-      comentarios: 5,
-      curtido: false,
-      comentariosLista: [],
-    },
-
-    {
-      id: 3,
-      autor: 'Ana Costa',
-      avatar: 'A',
-      tempo: 'Há 1 dia',
-      tipo: 'atividade',
-      conteudo:
-        'Grupo de estudo bíblico toda quarta-feira às 20h. Estamos estudando o livro de Atos. Interessados, entrar em contato!',
-      curtidas: 35,
-      comentarios: 12,
-      curtido: false,
-      comentariosLista: [],
-    },
-  ])
-
-  const [novoPost, setNovoPost] =
-    useState('')
-
-  const [tipoPost, setTipoPost] =
-    useState(null)
-
-  const [mostrarComentarios,
-    setMostrarComentarios] = useState({})
-
-  const [novoComentario,
-    setNovoComentario] = useState({})
-
-    const [mostrarModal, setMostrarModal] =
-  useState(false)
-
-const [mensagemModal, setMensagemModal] =
-  useState('')
-
-  const handleCurtir = (postId) => {
-    setPosts(
-      posts.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-
-            curtidas: post.curtido
-              ? post.curtidas - 1
-              : post.curtidas + 1,
-
-            curtido: !post.curtido,
-          }
-        }
-
-        return post
-      })
-    )
+  const carregarPosts = async () => {
+    try {
+      setLoading(true)
+      const postsData = await postService.getPosts()
+      
+      if (user) {
+        const postsComCurtidas = await Promise.all(
+          postsData.map(async (post) => {
+            const curtido = await postService.verificarCurtida(post.id, user.id)
+            return { ...post, curtido }
+          })
+        )
+        setPosts(postsComCurtidas)
+      } else {
+        setPosts(postsData)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar posts:', error)
+      mostrarModalPersonalizado('Erro ao carregar posts', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handlePublicar = () => {
-    if (!novoPost.trim()) {
-     setMensagemModal(
-  'Digite uma mensagem para publicar!'
-)
+  const mostrarModalPersonalizado = (mensagem, tipo = 'success') => {
+    setMensagemModal(mensagem)
+    setTipoModal(tipo)
+    setMostrarModal(true)
+  }
 
-setMostrarModal(true)
+  const handleSelecionarImagens = (e) => {
+    const files = Array.from(e.target.files)
+    if (files.length > 5) {
+      mostrarModalPersonalizado('Máximo de 5 imagens por post', 'error')
       return
     }
 
-    const novoPostObj = {
-      id: posts.length + 1,
+    // Pré-visualização
+    const previews = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }))
 
-      autor:
-        user?.name ||
-        user?.email?.split('@')[0] ||
-        'Você',
-
-      avatar: (
-        user?.name?.[0] ||
-        user?.email?.[0] ||
-        'V'
-      ).toUpperCase(),
-
-      tempo: 'Agora mesmo',
-
-      tipo: tipoPost,
-
-      conteudo: novoPost,
-
-      curtidas: 0,
-
-      comentarios: 0,
-
-      curtido: false,
-
-      comentariosLista: [],
-    }
-
-    setPosts([novoPostObj, ...posts])
-
-    setNovoPost('')
-
-    setTipoPost(null)
-
-   setMensagemModal('Post publicado com sucesso!')
-   setMostrarModal(true)
+    setImagensSelecionadas(prev => [...prev, ...previews])
+    e.target.value = '' // Resetar input
   }
 
-  const handleComentar = (postId) => {
-    const comentario =
-      novoComentario[postId]
-
-    if (!comentario?.trim()) {
-      alert('Digite um comentário!')
-
-      return
-    }
-
-    setPosts(
-      posts.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-
-            comentarios:
-              post.comentarios + 1,
-
-            comentariosLista: [
-              ...post.comentariosLista,
-
-              {
-                id: Date.now(),
-
-                autor:
-                  user?.name ||
-                  'Você',
-
-                conteudo: comentario,
-
-                tempo: 'Agora mesmo',
-              },
-            ],
-          }
-        }
-
-        return post
-      })
-    )
-
-    setNovoComentario({
-      ...novoComentario,
-
-      [postId]: '',
+  const removerImagemSelecionada = (index) => {
+    setImagensSelecionadas(prev => {
+      const novas = [...prev]
+      URL.revokeObjectURL(novas[index].preview) // Limpar URL
+      novas.splice(index, 1)
+      return novas
     })
   }
 
+  const handlePublicar = async () => {
+    if (!user) {
+      mostrarModalPersonalizado('Faça login para publicar!', 'error')
+      return
+    }
+
+    if (!novoPost.trim() && imagensSelecionadas.length === 0) {
+      mostrarModalPersonalizado('Digite uma mensagem ou adicione uma imagem!', 'error')
+      return
+    }
+
+    try {
+      setPostando(true)
+      setUploadingImagens(true)
+
+      // Upload das imagens
+      let imageUrls = []
+      if (imagensSelecionadas.length > 0) {
+        const files = imagensSelecionadas.map(item => item.file)
+        const result = await postService.uploadImagens(files, user.id)
+        imageUrls = result.urls
+        
+        if (result.errors.length > 0) {
+          mostrarModalPersonalizado(`Algumas imagens não foram enviadas: ${result.errors.join(', ')}`, 'error')
+        }
+      }
+
+      const postData = {
+        user_id: user.id,
+        autor: user?.name || user?.email?.split('@')[0] || 'Usuário',
+        avatar: (user?.name?.[0] || user?.email?.[0] || 'U').toUpperCase(),
+        conteudo: novoPost || '📸 Post com imagem',
+        tipo: tipoPost || 'outros',
+        imagens: imageUrls
+      }
+
+      const novoPostObj = await postService.criarPost(postData)
+      
+      setPosts([{
+        ...novoPostObj,
+        curtidas: 0,
+        comentarios: 0,
+        curtido: false,
+        comentariosLista: []
+      }, ...posts])
+
+      setNovoPost('')
+      setTipoPost(null)
+      setImagensSelecionadas([])
+      mostrarModalPersonalizado('Post publicado com sucesso!', 'success')
+    } catch (error) {
+      console.error('Erro ao publicar:', error)
+      mostrarModalPersonalizado(`Erro ao publicar: ${error.message}`, 'error')
+    } finally {
+      setPostando(false)
+      setUploadingImagens(false)
+    }
+  }
+
+  // Substitua a função handleDeletarPost por esta:
+const handleDeletarPost = async (postId) => {
+  if (!user) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Ops...',
+      text: 'Faça login para deletar posts!',
+      confirmButtonColor: '#8b5e3c',
+    })
+    return
+  }
+
+  // SweetAlert de confirmação
+  const result = await Swal.fire({
+    title: 'Tem certeza?',
+    text: 'Você não poderá desfazer esta ação!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sim, deletar!',
+    cancelButtonText: 'Cancelar',
+    reverseButtons: true,
+  })
+
+  if (!result.isConfirmed) {
+    return // Usuário cancelou
+  }
+
+  try {
+    setDeletando(prev => ({ ...prev, [postId]: true }))
+    
+    await postService.deletarPost(postId, user.id)
+    
+    // Remover do estado local
+    setPosts(posts.filter(post => post.id !== postId))
+    
+    // SweetAlert de sucesso
+    Swal.fire({
+      icon: 'success',
+      title: 'Deletado!',
+      text: 'O post foi removido com sucesso.',
+      timer: 2000,
+      showConfirmButton: true,
+      confirmButtonColor: '#8b5e3c',
+    })
+  } catch (error) {
+    console.error('Erro ao deletar:', error)
+    
+    // SweetAlert de erro
+    Swal.fire({
+      icon: 'error',
+      title: 'Erro!',
+      text: `Não foi possível deletar o post: ${error.message}`,
+      confirmButtonColor: '#8b5e3c',
+    })
+  } finally {
+    setDeletando(prev => ({ ...prev, [postId]: false }))
+  }
+}
+
+// Substitua a função handleDeletarImagem por esta:
+const handleDeletarImagem = async (postId, imageUrl) => {
+  // SweetAlert de confirmação
+  const result = await Swal.fire({
+    title: 'Remover imagem?',
+    text: 'Esta imagem será removida do post.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sim, remover!',
+    cancelButtonText: 'Cancelar',
+    reverseButtons: true,
+  })
+
+  if (!result.isConfirmed) {
+    return // Usuário cancelou
+  }
+
+  try {
+    await postService.deletarImagem(postId, imageUrl, user.id)
+    
+    // Atualizar estado local
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          imagens: post.imagens.filter(url => url !== imageUrl)
+        }
+      }
+      return post
+    }))
+
+    // SweetAlert de sucesso
+    Swal.fire({
+      icon: 'success',
+      title: 'Removida!',
+      text: 'Imagem removida com sucesso.',
+      timer: 1500,
+      showConfirmButton: true,
+      confirmButtonColor: '#8b5e3c',
+    })
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error)
+    
+    // SweetAlert de erro
+    Swal.fire({
+      icon: 'error',
+      title: 'Erro!',
+      text: `Não foi possível remover a imagem: ${error.message}`,
+      confirmButtonColor: '#8b5e3c',
+    })
+  }
+}
+
+  const handleCurtir = async (postId) => {
+    if (!user) {
+      mostrarModalPersonalizado('Faça login para curtir!', 'error')
+      return
+    }
+
+    try {
+      const resultado = await postService.toggleCurtida(postId, user.id)
+      
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            curtidas: resultado.curtido ? post.curtidas + 1 : post.curtidas - 1,
+            curtido: resultado.curtido
+          }
+        }
+        return post
+      }))
+    } catch (error) {
+      console.error('Erro ao curtir:', error)
+      mostrarModalPersonalizado('Erro ao curtir post', 'error')
+    }
+  }
+
+  const handleComentar = async (postId) => {
+    if (!user) {
+      mostrarModalPersonalizado('Faça login para comentar!', 'error')
+      return
+    }
+
+    const comentario = novoComentario[postId]
+    if (!comentario?.trim()) {
+      mostrarModalPersonalizado('Digite um comentário!', 'error')
+      return
+    }
+
+    try {
+      const novoComentarioObj = await postService.adicionarComentario(
+        postId,
+        user.id,
+        user?.name || 'Usuário',
+        comentario
+      )
+
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comentarios: post.comentarios + 1,
+            comentariosLista: [...post.comentariosLista, novoComentarioObj]
+          }
+        }
+        return post
+      }))
+
+      setNovoComentario({ ...novoComentario, [postId]: '' })
+    } catch (error) {
+      console.error('Erro ao comentar:', error)
+      mostrarModalPersonalizado('Erro ao comentar', 'error')
+    }
+  }
+
+  const handleCompartilhar = async (postId) => {
+    if (!user) {
+      mostrarModalPersonalizado('Faça login para compartilhar!', 'error')
+      return
+    }
+
+    try {
+      await postService.compartilharPost(postId, user.id)
+      const url = `${window.location.origin}/post/${postId}`
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Compartilhar post',
+          text: 'Veja este post no nosso aplicativo!',
+          url: url
+        })
+      } else {
+        await navigator.clipboard.writeText(url)
+        mostrarModalPersonalizado('Link copiado para a área de transferência!', 'success')
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Erro ao compartilhar:', error)
+        mostrarModalPersonalizado('Erro ao compartilhar', 'error')
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f2ea' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#8b5e3c' }} />
+      </div>
+    )
+  }
+
   return (
-    <div
-      style={{
-        background: '#f5f2ea',
-        minHeight:
-          'calc(100vh - 70px)',
-        padding: '24px 16px',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '820px',
-          margin: '0 auto',
-        }}
-      >
+    <div style={{ background: '#f5f2ea', minHeight: 'calc(100vh - 70px)', padding: '24px 16px' }}>
+      <div style={{ maxWidth: '820px', margin: '0 auto' }}>
         {/* PUBLICAR */}
-        <div
-          style={{
-            background: 'white',
-            borderRadius: '18px',
-            padding: '18px',
-            marginBottom: '24px',
-            border:
-              '1px solid #e7dfd4',
-            boxShadow:
-              '0 2px 8px rgba(0,0,0,0.05)',
-          }}
-        >
+        <div style={{
+          background: 'white',
+          borderRadius: '18px',
+          padding: '18px',
+          marginBottom: '24px',
+          border: '1px solid #e7dfd4',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        }}>
           <textarea
             value={novoPost}
-            onChange={(e) =>
-              setNovoPost(e.target.value)
-            }
+            onChange={(e) => setNovoPost(e.target.value)}
             placeholder="Compartilhe uma mensagem de fé..."
             rows="2"
             style={{
@@ -232,75 +394,147 @@ setMostrarModal(true)
               resize: 'none',
               padding: '14px',
               borderRadius: '14px',
-              border:
-                '1px solid #d9cfc0',
+              border: '1px solid #d9cfc0',
               background: '#f1ebe2',
               fontSize: '15px',
               outline: 'none',
-              color: '#ffffff',
+              color: '#000000',
               marginBottom: '16px',
             }}
           />
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent:
-                'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                gap: '20px',
-              }}
-            >
+          {/* Pré-visualização das imagens */}
+          {imagensSelecionadas.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {imagensSelecionadas.map((item, index) => (
+                <div key={index} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                  <img
+                    src={item.preview}
+                    alt={`Preview ${index}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <button
+                    onClick={() => removerImagemSelecionada(index)}
+                    style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#dc2626',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
-                onClick={() =>
-                  setTipoPost('anuncio')
-                }
+                onClick={() => setTipoPost(tipoPost === 'anuncio' ? null : 'anuncio')}
                 style={{
-                  border: 'none',
-                  background: 'transparent',
+                  border: tipoPost === 'anuncio' ? '2px solid #ea580c' : '1px solid #d9cfc0',
+                  background: tipoPost === 'anuncio' ? '#fde7d2' : 'transparent',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  color: '#ffffff',
+                  color: '#475569',
                   cursor: 'pointer',
-                  fontSize: '16px',
+                  fontSize: '14px',
                 }}
               >
-                <Megaphone size={18} />
+                <Megaphone size={18} color={tipoPost === 'anuncio' ? '#ea580c' : '#475569'} />
                 Anúncio
               </button>
 
               <button
-                onClick={() =>
-                  setTipoPost(
-                    'atividade'
-                  )
-                }
+                onClick={() => setTipoPost(tipoPost === 'atividade' ? null : 'atividade')}
                 style={{
-                  border: 'none',
-                  background: 'transparent',
+                  border: tipoPost === 'atividade' ? '2px solid #16a34a' : '1px solid #d9cfc0',
+                  background: tipoPost === 'atividade' ? '#dcfce7' : 'transparent',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  color: '#ffffff',
+                  color: '#475569',
                   cursor: 'pointer',
-                  fontSize: '16px',
+                  fontSize: '14px',
                 }}
               >
-                <CalendarDays size={18} />
+                <CalendarDays size={18} color={tipoPost === 'atividade' ? '#16a34a' : '#475569'} />
                 Atividade
               </button>
+
+              <button
+                onClick={() => setTipoPost(tipoPost === 'outros' ? null : 'outros')}
+                style={{
+                  border: tipoPost === 'outros' ? '2px solid #6b7280' : '1px solid #d9cfc0',
+                  background: tipoPost === 'outros' ? '#f3f4f6' : 'transparent',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                <Send size={18} color={tipoPost === 'outros' ? '#6b7280' : '#475569'} />
+                Outros
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '1px solid #d9cfc0',
+                  background: 'transparent',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                <ImageIcon size={18} />
+                Imagem
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleSelecionarImagens}
+                style={{ display: 'none' }}
+              />
             </div>
 
             <button
               onClick={handlePublicar}
+              disabled={postando || uploadingImagens}
               style={{
                 background: '#8b5e3c',
                 color: 'white',
@@ -309,44 +543,66 @@ setMostrarModal(true)
                 padding: '12px 24px',
                 fontWeight: '600',
                 fontSize: '16px',
-                cursor: 'pointer',
+                cursor: (postando || uploadingImagens) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
+                opacity: (postando || uploadingImagens) ? 0.7 : 1,
               }}
             >
-              <Send size={18} />
-              Publicar
+              {postando || uploadingImagens ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              {postando ? 'Publicando...' : uploadingImagens ? 'Enviando imagens...' : 'Publicar'}
             </button>
           </div>
         </div>
 
         {/* POSTS */}
-        {posts.map((post) => (
-          <div
-            key={post.id}
-            style={{
-              background: 'white',
-              borderRadius: '18px',
-              padding: '24px',
-              marginBottom: '20px',
-              border:
-                '1px solid #e7dfd4',
-              boxShadow:
-                '0 2px 8px rgba(255, 255, 255, 0.05)',
-            }}
-          >
-            {/* TOPO */}
+        {posts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', background: 'white', borderRadius: '18px', color: '#64748b' }}>
+            <p style={{ fontSize: '18px' }}>Nenhum post ainda. Seja o primeiro a publicar!</p>
+          </div>
+        ) : (
+          posts.map((post) => (
             <div
+              key={post.id}
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '14px',
-                marginBottom: '18px',
+                background: 'white',
+                borderRadius: '18px',
+                padding: '24px',
+                marginBottom: '20px',
+                border: '1px solid #e7dfd4',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                position: 'relative',
               }}
             >
-              <div
-                style={{
+              {/* Botão Deletar */}
+              {user && post.user_id === user.id && (
+                <button
+                  onClick={() => handleDeletarPost(post.id)}
+                  disabled={deletando[post.id]}
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: deletando[post.id] ? 'not-allowed' : 'pointer',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    opacity: deletando[post.id] ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  {deletando[post.id] ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                </button>
+              )}
+
+              {/* TOPO */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' }}>
+                <div style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
@@ -358,248 +614,212 @@ setMostrarModal(true)
                   fontWeight: '300',
                   fontSize: '18px',
                   flexShrink: 0,
-                }}
-              >
-                {post.avatar}
+                }}>
+                  {post.avatar}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: '18px' }}>
+                      {post.autor}
+                    </h3>
+
+                    {post.tipo === 'anuncio' && (
+                      <span style={{ background: '#fde7d2', color: '#ea580c', padding: '4px 10px', borderRadius: '999px', fontSize: '12px' }}>
+                        Anúncio
+                      </span>
+                    )}
+                    {post.tipo === 'atividade' && (
+                      <span style={{ background: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '999px', fontSize: '12px' }}>
+                        Atividade
+                      </span>
+                    )}
+                    {post.tipo === 'outros' && (
+                      <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '4px 10px', borderRadius: '999px', fontSize: '12px' }}>
+                        Outros
+                      </span>
+                    )}
+                  </div>
+
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
+                    {new Date(post.created_at).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <div
+              {/* TEXTO */}
+              {post.conteudo && (
+                <p style={{ color: '#334155', lineHeight: '1.8', fontSize: '17px', marginBottom: '20px' }}>
+                  {post.conteudo}
+                </p>
+              )}
+
+              {/* IMAGENS */}
+              {post.imagens && post.imagens.length > 0 && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: post.imagens.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+                  gap: '10px',
+                  marginBottom: '20px',
+                }}>
+                  {post.imagens.map((imgUrl, index) => (
+                    <div key={index} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
+                      <img
+                        src={imgUrl}
+                        alt={`Post ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: post.imagens.length === 1 ? '400px' : '200px',
+                          objectFit: 'cover',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s',
+                        }}
+                        onClick={() => setImagemZoom(imgUrl)}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      />
+                      
+                      {/* Botão remover imagem (apenas dono) */}
+                      {user && post.user_id === user.id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeletarImagem(post.id, imgUrl)
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '28px',
+                            height: '28px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220,38,38,0.8)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <hr style={{ border: 'none', borderTop: '1px solid #e7dfd4', marginBottom: '18px' }} />
+
+              {/* AÇÕES */}
+              <div style={{ display: 'flex', gap: '26px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleCurtir(post.id)}
                   style={{
+                    border: 'none',
+                    background: 'transparent',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    flexWrap: 'wrap',
+                    cursor: 'pointer',
+                    color: post.curtido ? '#dc2626' : '#475569',
+                    fontSize: '16px',
+                    fontWeight: '500',
                   }}
                 >
-                  <h3
-                    style={{
-                      margin: 0,
-                      color: '#0f172a',
-                      fontSize: '18px',
-                    }}
-                  >
-                    {post.autor}
-                  </h3>
+                  <Heart size={21} fill={post.curtido ? '#dc2626' : 'none'} />
+                  {post.curtidas}
+                </button>
 
-                  {post.tipo ===
-                    'anuncio' && (
-                    <span
-                      style={{
-                        background:
-                          '#fde7d2',
-                        color: '#ea580c',
-                        padding:
-                          '4px 10px',
-                        borderRadius:
-                          '999px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      Anúncio
-                    </span>
-                  )}
-
-                  {post.tipo ===
-                    'atividade' && (
-                    <span
-                      style={{
-                        background:
-                          '#dcfce7',
-                        color: '#16a34a',
-                        padding:
-                          '4px 10px',
-                        borderRadius:
-                          '999px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      Atividade
-                    </span>
-                  )}
-                </div>
-
-                <p
-                  style={{
-                    margin: '4px 0 0 0',
-                    color: '#64748b',
-                    fontSize: '14px',
-                  }}
-                >
-                  {post.tempo}
-                </p>
-              </div>
-            </div>
-
-            {/* TEXTO */}
-            <p
-              style={{
-                color: '#334155',
-                lineHeight: '1.8',
-                fontSize: '17px',
-                marginBottom: '20px',
-              }}
-            >
-              {post.conteudo}
-            </p>
-
-            <hr
-              style={{
-                border: 'none',
-                borderTop:
-                  '1px solid #ececec',
-                marginBottom: '18px',
-              }}
-            />
-
-            {/* AÇÕES */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '26px',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <button
-                onClick={() =>
-                  handleCurtir(post.id)
-                }
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  color: post.curtido
-                    ? '#dc2626'
-                    : '#475569',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                }}
-              >
-                <Heart size={21} />
-                {post.curtidas}
-              </button>
-
-              <button
-                onClick={() =>
-                  setMostrarComentarios({
+                <button
+                  onClick={() => setMostrarComentarios({
                     ...mostrarComentarios,
-
-                    [post.id]:
-                      !mostrarComentarios[
-                        post.id
-                      ],
-                  })
-                }
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  color: '#475569',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                }}
-              >
-                <MessageCircle
-                  size={21}
-                />
-                {post.comentarios}
-              </button>
-
-              <button
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  color: '#475569',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                }}
-              >
-                <Share2 size={21} />
-                Compartilhar
-              </button>
-            </div>
-
-            {/* COMENTÁRIOS */}
-            {mostrarComentarios[
-              post.id
-            ] && (
-              <div
-                style={{
-                  marginTop: '24px',
-                }}
-              >
-                <div
+                    [post.id]: !mostrarComentarios[post.id],
+                  })}
                   style={{
+                    border: 'none',
+                    background: 'transparent',
                     display: 'flex',
-                    gap: '10px',
-                    marginBottom: '16px',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    color: '#475569',
+                    fontSize: '16px',
+                    fontWeight: '500',
                   }}
                 >
-                  <input
-                    type="text"
-                    value={
-                      novoComentario[
-                        post.id
-                      ] || ''
-                    }
-                    onChange={(e) =>
-                      setNovoComentario({
+                  <MessageCircle size={21} />
+                  {post.comentarios}
+                </button>
+
+                <button
+                  onClick={() => handleCompartilhar(post.id)}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    color: '#475569',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                  }}
+                >
+                  <Share2 size={21} />
+                  Compartilhar
+                </button>
+              </div>
+
+              {/* COMENTÁRIOS */}
+              {mostrarComentarios[post.id] && (
+                <div style={{ marginTop: '24px' }}>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                    <input
+                      type="text"
+                      value={novoComentario[post.id] || ''}
+                      onChange={(e) => setNovoComentario({
                         ...novoComentario,
+                        [post.id]: e.target.value,
+                      })}
+                      placeholder="Escreva um comentário..."
+                      style={{
+                        color: 'black',
+                        flex: 1,
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #d9cfc0',
+                        background: '#ffffff',
+                        outline: 'none',
+                      }}
+                    />
 
-                        [post.id]:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Escreva um comentário..."
-                    style={{
-                      flex: 1,
-                      padding:
-                        '12px 14px',
-                      borderRadius:
-                        '10px',
-                      border:
-                        '1px solid #d9cfc0',
-                      background:
-                        '#f8f5ef',
-                      outline: 'none',
-                    }}
-                  />
+                    <button
+                      onClick={() => handleComentar(post.id)}
+                      style={{
+                        background: '#8b5e3c',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '0 18px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Enviar
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={() =>
-                      handleComentar(
-                        post.id
-                      )
-                    }
-                    style={{
-                      background:
-                        '#8b5e3c',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius:
-                        '10px',
-                      padding:
-                        '0 18px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Enviar
-                  </button>
-                </div>
-
-                {post.comentariosLista.map(
-                  (comentario) => (
+                  {post.comentariosLista?.map((comentario) => (
                     <div
                       key={comentario.id}
                       style={{
@@ -610,120 +830,141 @@ setMostrarModal(true)
                         marginBottom: '10px',
                       }}
                     >
-                        <strong
-                      style={{
-                        color: '#000000',
-                      }}
-                    >
-                        {
-                          comentario.autor
-                        }
-                      </strong>
-
-                      <p
-                        style={{
-                          margin:
-                            '6px 0 0 0',
-                          color:
-                            '#334155',
-                        }}
-                      >
-                        {
-                          comentario.conteudo
-                        }
+                      <strong style={{ color: '#000000' }}>{comentario.autor}</strong>
+                      <p style={{ margin: '6px 0 0 0', color: '#334155' }}>
+                        {comentario.conteudo}
                       </p>
+                      <small style={{ color: '#64748b', fontSize: '12px' }}>
+                        {new Date(comentario.created_at).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </small>
                     </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
+      {/* MODAL DE ZOOM */}
+      {imagemZoom && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10000,
+            cursor: 'pointer',
+          }}
+          onClick={() => setImagemZoom(null)}
+        >
+          <img
+            src={imagemZoom}
+            alt="Zoom"
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              objectFit: 'contain',
+              borderRadius: '8px',
+            }}
+          />
+          <button
+            onClick={() => setImagemZoom(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: '50px',
+              height: '50px',
+              fontSize: '24px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
+      {/* MODAL DE FEEDBACK */}
       {mostrarModal && (
-  <div
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 9999,
-    }}
-  >
-    <div
-      style={{
-        background: '#fff',
-        padding: '35px',
-        borderRadius: '20px',
-        width: '420px',
-        textAlign: 'center',
-        boxShadow:
-          '0 10px 30px rgba(0,0,0,0.15)',
-      }}
-    >
-      <div
-        style={{
-          width: '80px',
-          height: '80px',
-          margin: '0 auto 20px',
-          borderRadius: '50%',
-          background: '#dff5e5',
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.5)',
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '40px',
-          color: '#22c55e',
-        }}
-      >
-        ✓
-      </div>
+          alignItems: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '35px',
+            borderRadius: '20px',
+            width: '420px',
+            textAlign: 'center',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 20px',
+              borderRadius: '50%',
+              background: tipoModal === 'success' ? '#dff5e5' : '#fee2e2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '40px',
+              color: tipoModal === 'success' ? '#22c55e' : '#dc2626',
+            }}>
+              {tipoModal === 'success' ? <Check size={40} /> : <AlertCircle size={40} />}
+            </div>
 
-      <h2
-        style={{
-          color: '#8b5e3c',
-          marginBottom: '10px',
-        }}
-      >
-        Atenção
-      </h2>
+            <h2 style={{ color: '#8b5e3c', marginBottom: '10px' }}>
+              {tipoModal === 'success' ? 'Sucesso!' : 'Atenção'}
+            </h2>
 
-      <p
-        style={{
-          color: '#64748b',
-          fontSize: '18px',
-          marginBottom: '25px',
-        }}
-      >
-        {mensagemModal}
-      </p>
+            <p style={{ color: '#64748b', fontSize: '18px', marginBottom: '25px' }}>
+              {mensagemModal}
+            </p>
 
-      <button
-        onClick={() =>
-          setMostrarModal(false)
-        }
-        style={{
-          background: '#8b5e3c',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '12px',
-          padding: '12px 28px',
-          cursor: 'pointer',
-          fontWeight: '600',
-        }}
-      >
-        OK
-      </button>
-    </div>
-  </div>
-)}
-
+            <button
+              onClick={() => setMostrarModal(false)}
+              style={{
+                background: '#8b5e3c',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '12px 28px',
+                cursor: 'pointer',
+                fontWeight: '600',
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -457,17 +457,12 @@ function Login() {
                 required
                 style={{
                   width: '100%',
-
                   padding: '14px',
-
                   borderRadius: '14px',
-
                   border: `1px solid ${cores.borda}`,
-
                   background: '#faf7f2',
-
+                  color: '#000000' ,
                   fontSize: '14px',
-
                   outline: 'none',
                 }}
               />
@@ -506,17 +501,12 @@ function Login() {
                 required
                 style={{
                   width: '100%',
-
                   padding: '14px',
-
                   borderRadius: '14px',
-
                   border: `1px solid ${cores.borda}`,
-
                   background: '#faf7f2',
-
+                  color: '#000000' ,
                   fontSize: '14px',
-
                   outline: 'none',
                 }}
               />
@@ -555,17 +545,12 @@ function Login() {
                 required
                 style={{
                   width: '100%',
-
                   padding: '14px',
-
                   borderRadius: '14px',
-
                   border: `1px solid ${cores.borda}`,
-
                   background: '#faf7f2',
-
+                   color: '#000000' ,
                   fontSize: '14px',
-
                   outline: 'none',
                 }}
               />

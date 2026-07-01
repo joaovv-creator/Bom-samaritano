@@ -1,19 +1,24 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext } from 'react'
+import { supabase } from '../lib/SupabaseClient'
 
-const SupabaseContext = createContext();
+const SupabaseContext = createContext()
 
-function SupabaseProvider({ children }) {
-  const value = {};
-
+export function SupabaseProvider({ children }) {
   return (
-    <SupabaseContext.Provider value={value}>
+    <SupabaseContext.Provider value={{ supabase }}>
       {children}
     </SupabaseContext.Provider>
-  );
+  )
 }
 
-function useSupabase() {
-  return useContext(SupabaseContext);
-}
+export function useSupabase() {
+  const context = useContext(SupabaseContext)
 
-export { SupabaseProvider, useSupabase };
+  if (!context) {
+    throw new Error(
+      'useSupabase deve ser usado dentro de SupabaseProvider'
+    )
+  }
+
+  return context
+}
