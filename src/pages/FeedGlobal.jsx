@@ -610,24 +610,27 @@ const carregarTotalUsuarios = async () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
         }}>
           <textarea
-            value={novoPost}
-            onChange={(e) => setNovoPost(e.target.value)}
-            placeholder="Compartilhe uma mensagem de fé..."
-            rows="2"
-            style={{
-              width: '100%',
-              height: '70px',
-              resize: 'none',
-              padding: '14px',
-              borderRadius: '14px',
-              border: '1px solid #d9cfc0',
-              background: '#f1ebe2',
-              fontSize: '15px',
-              outline: 'none',
-              color: '#000000',
-              marginBottom: '16px',
-            }}
-          />
+  value={novoPost}
+  onChange={(e) => setNovoPost(e.target.value)}
+  placeholder="Compartilhe uma mensagem de fé..."
+  rows="2"
+  style={{
+    width: '100%',
+    height: '70px',
+    resize: 'none',
+    padding: '14px',
+    borderRadius: '14px',
+    border: '1px solid #d9cfc0',
+    background: '#f1ebe2',
+    fontSize: '15px',
+    outline: 'none',
+    color: '#000000',
+    marginBottom: '16px',
+    fontFamily: "'Inter', 'Segoe UI', sans-serif", // Fonte moderna
+    fontWeight: '400',
+    letterSpacing: '0.3px', // Pequeno espaçamento
+  }}
+/>
 
           {/* Pré-visualização das imagens */}
           {imagensSelecionadas.length > 0 && (
