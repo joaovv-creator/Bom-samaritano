@@ -1,3 +1,4 @@
+// src/contexts/CartContext.jsx
 import { createContext, useContext, useState } from "react";
 
 const CartContext = createContext();
@@ -64,6 +65,11 @@ export function CartProvider({ children }) {
     );
   };
 
+  // NOVA FUNÇÃO: Limpar carrinho
+  const limparCarrinho = () => {
+    setCarrinho([]);
+  };
+
   const total = carrinho.reduce(
     (acc, item) => acc + item.preco * item.quantidade,
     0
@@ -77,6 +83,7 @@ export function CartProvider({ children }) {
         removerDoCarrinho,
         aumentarQuantidade,
         diminuirQuantidade,
+        limparCarrinho, // ← ADICIONADO
         total,
       }}
     >

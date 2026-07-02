@@ -16,7 +16,14 @@ import {
   Image as ImageIcon,
   X,
   Trash2,
-  ZoomIn
+  ZoomIn,
+  Users,
+  FileText,
+  Activity,
+  Cross,
+  Church,
+  BookOpen,
+  Clock
 } from 'lucide-react'
 
 export default function FeedGlobal() {
@@ -78,20 +85,19 @@ export default function FeedGlobal() {
       return
     }
 
-    // Pré-visualização
     const previews = files.map(file => ({
       file,
       preview: URL.createObjectURL(file)
     }))
 
     setImagensSelecionadas(prev => [...prev, ...previews])
-    e.target.value = '' // Resetar input
+    e.target.value = ''
   }
 
   const removerImagemSelecionada = (index) => {
     setImagensSelecionadas(prev => {
       const novas = [...prev]
-      URL.revokeObjectURL(novas[index].preview) // Limpar URL
+      URL.revokeObjectURL(novas[index].preview)
       novas.splice(index, 1)
       return novas
     })
@@ -112,7 +118,6 @@ export default function FeedGlobal() {
       setPostando(true)
       setUploadingImagens(true)
 
-      // Upload das imagens
       let imageUrls = []
       if (imagensSelecionadas.length > 0) {
         const files = imagensSelecionadas.map(item => item.file)
@@ -128,7 +133,7 @@ export default function FeedGlobal() {
         user_id: user.id,
         autor: user?.name || user?.email?.split('@')[0] || 'Usuário',
         avatar: (user?.name?.[0] || user?.email?.[0] || 'U').toUpperCase(),
-        conteudo: novoPost || '📸 Post com imagem',
+        conteudo: novoPost || 'Post com imagem',
         tipo: tipoPost || 'outros',
         imagens: imageUrls
       }
@@ -156,121 +161,103 @@ export default function FeedGlobal() {
     }
   }
 
-  // Substitua a função handleDeletarPost por esta:
-const handleDeletarPost = async (postId) => {
-  if (!user) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Ops...',
-      text: 'Faça login para deletar posts!',
-      confirmButtonColor: '#8b5e3c',
+  const handleDeletarPost = async (postId) => {
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Ops...',
+        text: 'Faça login para deletar posts!',
+        confirmButtonColor: '#8b5e3c',
+      })
+      return
+    }
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: 'Você não poderá desfazer esta ação!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
     })
-    return
+
+    if (!result.isConfirmed) return
+
+    try {
+      setDeletando(prev => ({ ...prev, [postId]: true }))
+      await postService.deletarPost(postId, user.id)
+      setPosts(posts.filter(post => post.id !== postId))
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Deletado!',
+        text: 'O post foi removido com sucesso.',
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      })
+    } catch (error) {
+      console.error('Erro ao deletar:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: `Não foi possível deletar o post: ${error.message}`,
+        confirmButtonColor: '#8b5e3c',
+      })
+    } finally {
+      setDeletando(prev => ({ ...prev, [postId]: false }))
+    }
   }
 
-  // SweetAlert de confirmação
-  const result = await Swal.fire({
-    title: 'Tem certeza?',
-    text: 'Você não poderá desfazer esta ação!',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280',
-    confirmButtonText: 'Sim, deletar!',
-    cancelButtonText: 'Cancelar',
-    reverseButtons: true,
-  })
-
-  if (!result.isConfirmed) {
-    return // Usuário cancelou
-  }
-
-  try {
-    setDeletando(prev => ({ ...prev, [postId]: true }))
-    
-    await postService.deletarPost(postId, user.id)
-    
-    // Remover do estado local
-    setPosts(posts.filter(post => post.id !== postId))
-    
-    // SweetAlert de sucesso
-    Swal.fire({
-      icon: 'success',
-      title: 'Deletado!',
-      text: 'O post foi removido com sucesso.',
-      timer: 2000,
-      showConfirmButton: true,
-      confirmButtonColor: '#8b5e3c',
+  const handleDeletarImagem = async (postId, imageUrl) => {
+    const result = await Swal.fire({
+      title: 'Remover imagem?',
+      text: 'Esta imagem será removida do post.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, remover!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
     })
-  } catch (error) {
-    console.error('Erro ao deletar:', error)
-    
-    // SweetAlert de erro
-    Swal.fire({
-      icon: 'error',
-      title: 'Erro!',
-      text: `Não foi possível deletar o post: ${error.message}`,
-      confirmButtonColor: '#8b5e3c',
-    })
-  } finally {
-    setDeletando(prev => ({ ...prev, [postId]: false }))
-  }
-}
 
-// Substitua a função handleDeletarImagem por esta:
-const handleDeletarImagem = async (postId, imageUrl) => {
-  // SweetAlert de confirmação
-  const result = await Swal.fire({
-    title: 'Remover imagem?',
-    text: 'Esta imagem será removida do post.',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280',
-    confirmButtonText: 'Sim, remover!',
-    cancelButtonText: 'Cancelar',
-    reverseButtons: true,
-  })
+    if (!result.isConfirmed) return
 
-  if (!result.isConfirmed) {
-    return // Usuário cancelou
-  }
-
-  try {
-    await postService.deletarImagem(postId, imageUrl, user.id)
-    
-    // Atualizar estado local
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          imagens: post.imagens.filter(url => url !== imageUrl)
+    try {
+      await postService.deletarImagem(postId, imageUrl, user.id)
+      
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            imagens: post.imagens.filter(url => url !== imageUrl)
+          }
         }
-      }
-      return post
-    }))
+        return post
+      }))
 
-    // SweetAlert de sucesso
-    Swal.fire({
-      icon: 'success',
-      title: 'Removida!',
-      text: 'Imagem removida com sucesso.',
-      timer: 1500,
-      showConfirmButton: true,
-      confirmButtonColor: '#8b5e3c',
-    })
-  } catch (error) {
-    console.error('Erro ao deletar imagem:', error)
-    
-    // SweetAlert de erro
-    Swal.fire({
-      icon: 'error',
-      title: 'Erro!',
-      text: `Não foi possível remover a imagem: ${error.message}`,
-      confirmButtonColor: '#8b5e3c',
-    })
+      Swal.fire({
+        icon: 'success',
+        title: 'Removida!',
+        text: 'Imagem removida com sucesso.',
+        timer: 1500,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      })
+    } catch (error) {
+      console.error('Erro ao deletar imagem:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: `Não foi possível remover a imagem: ${error.message}`,
+        confirmButtonColor: '#8b5e3c',
+      })
+    }
   }
-}
 
   const handleCurtir = async (postId) => {
     if (!user) {
@@ -374,6 +361,150 @@ const handleDeletarImagem = async (postId, imageUrl) => {
   return (
     <div style={{ background: '#f5f2ea', minHeight: 'calc(100vh - 70px)', padding: '24px 16px' }}>
       <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+        
+        {/* ============================================ */}
+        {/* BANNER - Feed da Comunidade Cristã */}
+        {/* ============================================ */}
+        <div style={{
+          background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
+          borderRadius: '20px',
+          padding: '40px 36px',
+          color: 'white',
+          marginBottom: '28px',
+          boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Elemento decorativo - cruz sutil */}
+          <div style={{
+            position: 'absolute',
+            right: '-20px',
+            top: '-20px',
+            fontSize: '180px',
+            opacity: 0.06,
+            color: 'white',
+            transform: 'rotate(15deg)',
+            pointerEvents: 'none',
+            fontFamily: 'serif',
+          }}>
+            ✝
+          </div>
+          
+          {/* Elementos decorativos - círculos */}
+          <div style={{
+            position: 'absolute',
+            left: '-60px',
+            bottom: '-60px',
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            pointerEvents: 'none',
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            right: '40px',
+            bottom: '-80px',
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.04)',
+            pointerEvents: 'none',
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* Tag da comunidade */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: 'rgba(255,255,255,0.15)',
+              padding: '6px 16px 6px 12px',
+              borderRadius: '100px',
+              marginBottom: '16px',
+              backdropFilter: 'blur(10px)',
+            }}>
+              <Church size={18} style={{ opacity: 0.9 }} />
+              <span style={{ fontSize: '13px', fontWeight: '500', letterSpacing: '0.5px', opacity: 0.9 }}>
+                Comunidade de Fé
+              </span>
+            </div>
+
+            {/* Título principal */}
+            <h1 style={{
+              fontSize: '32px',
+              fontWeight: '700',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.5px',
+              lineHeight: 1.2,
+            }}>
+              Feed da Comunidade
+            </h1>
+
+            {/* Subtítulo */}
+            <p style={{
+              fontSize: '17px',
+              opacity: 0.95,
+              margin: '0 0 4px 0',
+              fontWeight: '400',
+              lineHeight: 1.6,
+            }}>
+              Compartilhe mensagens, fotos, anúncios e atividades com todos os membros.
+            </p>
+
+            {/* Versículo bíblico inspirador */}
+            <div style={{
+              marginTop: '14px',
+              padding: '12px 18px',
+              background: 'rgba(255,255,255,0.10)',
+              borderRadius: '12px',
+              borderLeft: '3px solid rgba(255,255,255,0.3)',
+              backdropFilter: 'blur(10px)',
+              maxWidth: '500px',
+            }}>
+              <p style={{
+                fontSize: '14px',
+                fontStyle: 'italic',
+                margin: 0,
+                opacity: 0.9,
+                lineHeight: 1.6,
+              }}>
+                "Porque onde estiverem dois ou três reunidos em meu nome, ali estou no meio deles"
+              </p>
+              <p style={{
+                fontSize: '13px',
+                margin: '4px 0 0 0',
+                opacity: 0.7,
+                fontWeight: '300',
+              }}>
+                — Mateus 18:20
+              </p>
+            </div>
+
+            {/* Estatísticas rápidas */}
+            <div style={{
+              display: 'flex',
+              gap: '28px',
+              marginTop: '18px',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>458 membros</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{posts.length} posts</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>Comunidade ativa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* PUBLICAR */}
         <div style={{
           background: 'white',
@@ -685,7 +816,6 @@ const handleDeletarImagem = async (postId, imageUrl) => {
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       />
                       
-                      {/* Botão remover imagem (apenas dono) */}
                       {user && post.user_id === user.id && (
                         <button
                           onClick={(e) => {
