@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { postService } from '../services/postService'
+import { userService } from '../services/userService'
 import Swal from 'sweetalert2'
 import {
   Heart,
@@ -43,9 +44,11 @@ export default function FeedGlobal() {
   const [imagemZoom, setImagemZoom] = useState(null)
   const fileInputRef = useRef(null)
   const [deletando, setDeletando] = useState({})
+  const [totalUsuarios, setTotalUsuarios] = useState(0)
 
   useEffect(() => {
     carregarPosts()
+    carregarTotalUsuarios()
   }, [])
 
   const carregarPosts = async () => {
@@ -66,11 +69,27 @@ export default function FeedGlobal() {
       }
     } catch (error) {
       console.error('Erro ao carregar posts:', error)
-      mostrarModalPersonalizado('Erro ao carregar posts', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro ao carregar posts',
+        text: 'Não foi possível carregar os posts. Tente novamente.',
+        confirmButtonColor: '#8b5e3c',
+      })
     } finally {
       setLoading(false)
     }
   }
+  
+const carregarTotalUsuarios = async () => {
+  try {
+    const response = await userService.getTotalUsers()
+    setTotalUsuarios(response.total || response.count || response.length || 0)
+  } catch (error) {
+    console.error('Erro ao carregar total de usuários:', error)
+    // Fallback: tenta contar pelos posts ou mantém 0
+    setTotalUsuarios(0)
+  }
+}
 
   const mostrarModalPersonalizado = (mensagem, tipo = 'success') => {
     setMensagemModal(mensagem)
@@ -81,7 +100,12 @@ export default function FeedGlobal() {
   const handleSelecionarImagens = (e) => {
     const files = Array.from(e.target.files)
     if (files.length > 5) {
-      mostrarModalPersonalizado('Máximo de 5 imagens por post', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Limite excedido',
+        text: 'Máximo de 5 imagens por post',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
@@ -105,12 +129,22 @@ export default function FeedGlobal() {
 
   const handlePublicar = async () => {
     if (!user) {
-      mostrarModalPersonalizado('Faça login para publicar!', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para publicar.',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
     if (!novoPost.trim() && imagensSelecionadas.length === 0) {
-      mostrarModalPersonalizado('Digite uma mensagem ou adicione uma imagem!', 'error')
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo vazio',
+        text: 'Digite uma mensagem ou adicione uma imagem!',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
@@ -125,7 +159,12 @@ export default function FeedGlobal() {
         imageUrls = result.urls
         
         if (result.errors.length > 0) {
-          mostrarModalPersonalizado(`Algumas imagens não foram enviadas: ${result.errors.join(', ')}`, 'error')
+          Swal.fire({
+            icon: 'warning',
+            title: 'Aviso',
+            text: `Algumas imagens não foram enviadas: ${result.errors.join(', ')}`,
+            confirmButtonColor: '#8b5e3c',
+          })
         }
       }
 
@@ -151,10 +190,23 @@ export default function FeedGlobal() {
       setNovoPost('')
       setTipoPost(null)
       setImagensSelecionadas([])
-      mostrarModalPersonalizado('Post publicado com sucesso!', 'success')
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Publicado!',
+        text: 'Seu post foi compartilhado com a comunidade.',
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      })
     } catch (error) {
       console.error('Erro ao publicar:', error)
-      mostrarModalPersonalizado(`Erro ao publicar: ${error.message}`, 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro ao publicar',
+        text: error.message,
+        confirmButtonColor: '#8b5e3c',
+      })
     } finally {
       setPostando(false)
       setUploadingImagens(false)
@@ -261,7 +313,12 @@ export default function FeedGlobal() {
 
   const handleCurtir = async (postId) => {
     if (!user) {
-      mostrarModalPersonalizado('Faça login para curtir!', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para curtir.',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
@@ -280,19 +337,34 @@ export default function FeedGlobal() {
       }))
     } catch (error) {
       console.error('Erro ao curtir:', error)
-      mostrarModalPersonalizado('Erro ao curtir post', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro ao curtir',
+        text: 'Tente novamente mais tarde.',
+        confirmButtonColor: '#8b5e3c',
+      })
     }
   }
 
   const handleComentar = async (postId) => {
     if (!user) {
-      mostrarModalPersonalizado('Faça login para comentar!', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para comentar.',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
     const comentario = novoComentario[postId]
     if (!comentario?.trim()) {
-      mostrarModalPersonalizado('Digite um comentário!', 'error')
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo vazio',
+        text: 'Digite um comentário!',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
@@ -318,13 +390,23 @@ export default function FeedGlobal() {
       setNovoComentario({ ...novoComentario, [postId]: '' })
     } catch (error) {
       console.error('Erro ao comentar:', error)
-      mostrarModalPersonalizado('Erro ao comentar', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro ao comentar',
+        text: 'Tente novamente mais tarde.',
+        confirmButtonColor: '#8b5e3c',
+      })
     }
   }
 
   const handleCompartilhar = async (postId) => {
     if (!user) {
-      mostrarModalPersonalizado('Faça login para compartilhar!', 'error')
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para compartilhar.',
+        confirmButtonColor: '#8b5e3c',
+      })
       return
     }
 
@@ -340,12 +422,24 @@ export default function FeedGlobal() {
         })
       } else {
         await navigator.clipboard.writeText(url)
-        mostrarModalPersonalizado('Link copiado para a área de transferência!', 'success')
+        Swal.fire({
+          icon: 'success',
+          title: 'Link copiado!',
+          text: 'O link foi copiado para a área de transferência.',
+          timer: 2000,
+          showConfirmButton: true,
+          confirmButtonColor: '#8b5e3c',
+        })
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('Erro ao compartilhar:', error)
-        mostrarModalPersonalizado('Erro ao compartilhar', 'error')
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro ao compartilhar',
+          text: 'Tente novamente mais tarde.',
+          confirmButtonColor: '#8b5e3c',
+        })
       }
     }
   }
@@ -363,7 +457,7 @@ export default function FeedGlobal() {
       <div style={{ maxWidth: '820px', margin: '0 auto' }}>
         
         {/* ============================================ */}
-        {/* BANNER - Feed da Comunidade Cristã */}
+        {/* BANNER - Feed Principal */}
         {/* ============================================ */}
         <div style={{
           background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
@@ -375,7 +469,7 @@ export default function FeedGlobal() {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Elemento decorativo - cruz sutil */}
+          {/* Elemento decorativo */}
           <div style={{
             position: 'absolute',
             right: '-20px',
@@ -390,7 +484,6 @@ export default function FeedGlobal() {
             ✝
           </div>
           
-          {/* Elementos decorativos - círculos */}
           <div style={{
             position: 'absolute',
             left: '-60px',
@@ -431,7 +524,7 @@ export default function FeedGlobal() {
               </span>
             </div>
 
-            {/* Título principal */}
+            {/* Título principal - ALTERADO PARA "Feed Principal" */}
             <h1 style={{
               fontSize: '32px',
               fontWeight: '700',
@@ -439,7 +532,7 @@ export default function FeedGlobal() {
               letterSpacing: '-0.5px',
               lineHeight: 1.2,
             }}>
-              Feed da Comunidade
+              Feed Principal
             </h1>
 
             {/* Subtítulo */}
@@ -453,7 +546,7 @@ export default function FeedGlobal() {
               Compartilhe mensagens, fotos, anúncios e atividades com todos os membros.
             </p>
 
-            {/* Versículo bíblico inspirador */}
+            {/* Versículo bíblico */}
             <div style={{
               marginTop: '14px',
               padding: '12px 18px',
@@ -482,7 +575,7 @@ export default function FeedGlobal() {
               </p>
             </div>
 
-            {/* Estatísticas rápidas */}
+            {/* Estatísticas - ALTERADO "membros" para "usuários" */}
             <div style={{
               display: 'flex',
               gap: '28px',
@@ -491,7 +584,9 @@ export default function FeedGlobal() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>458 membros</span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {totalUsuarios} usuários
+                </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={18} style={{ opacity: 0.85 }} />
