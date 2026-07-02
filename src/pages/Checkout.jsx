@@ -123,6 +123,31 @@ function Checkout() {
     setMostrarSucesso(true);
   };
 
+  // ============================================
+  // FUNÇÕES PARA OS BOTÕES DE SUPORTE
+  // ============================================
+  
+  const handleWhatsApp = () => {
+    window.open('https://wa.me/5511999999999?text=Olá!%20Preciso%20de%20ajuda%20com%20meu%20pedido.', '_blank');
+  };
+
+  const handleInstagram = () => {
+    window.open('https://instagram.com/obomsamaritano', '_blank');
+  };
+
+  const handleYouTube = () => {
+    window.open('https://youtube.com/@obomsamaritano', '_blank');
+  };
+
+  const handleFacebook = () => {
+    window.open('https://facebook.com/obomsamaritano', '_blank');
+  };
+
+  // Função para abrir chat de suporte (exemplo)
+  const handleSuporte = () => {
+    alert('📞 Suporte disponível de segunda a sexta, 9h às 18h.\n\nEntre em contato:\n📧 suporte@obomsamaritano.com\n📱 (11) 99999-9999');
+  };
+
   const opcoesPagamento = [
     {
       id: 'pix',
@@ -631,40 +656,129 @@ function Checkout() {
               <p style={styles.infoText}>Prazo de entrega: 5 a 10 dias úteis</p>
             </div>
 
+            {/* ============================================ */}
+            {/* CARD DE SUPORTE COM BOTÕES FUNCIONAIS */}
+            {/* ============================================ */}
             <div style={styles.infoCard}>
               <h4 style={styles.infoTitle}>
                 <Headphones size={16} color="#8B5A2B" style={{ marginRight: '8px' }} />
                 Suporte
               </h4>
+              
+              {/* Botão de suporte geral */}
+              <button
+                onClick={handleSuporte}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  marginBottom: '12px',
+                  background: '#8B5A2B',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#7b4b2a';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#8B5A2B';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Headphones size={18} />
+                Falar com Suporte
+              </button>
+
+              {/* Redes sociais */}
               <div style={styles.socialLinks}>
-                <a 
-                  href="#" 
-                  style={{ ...styles.socialLink, background: '#25D36615' }}
+                <button
+                  onClick={handleWhatsApp}
+                  style={{ 
+                    ...styles.socialLink, 
+                    background: '#25D36615',
+                    cursor: 'pointer'
+                  }}
                   title="WhatsApp"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#25D36625';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#25D36615';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <MessageCircle size={20} color="#25D366" />
-                </a>
-                <a 
-                  href="#" 
-                  style={{ ...styles.socialLink, background: '#E4405F15' }}
+                </button>
+                
+                <button
+                  onClick={handleInstagram}
+                  style={{ 
+                    ...styles.socialLink, 
+                    background: '#E4405F15',
+                    cursor: 'pointer'
+                  }}
                   title="Instagram"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#E4405F25';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#E4405F15';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <Camera size={20} color="#E4405F" />
-                </a>
-                <a 
-                  href="#" 
-                  style={{ ...styles.socialLink, background: '#FF000015' }}
+                </button>
+                
+                <button
+                  onClick={handleYouTube}
+                  style={{ 
+                    ...styles.socialLink, 
+                    background: '#FF000015',
+                    cursor: 'pointer'
+                  }}
                   title="YouTube"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#FF000025';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#FF000015';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <Play size={20} color="#FF0000" />
-                </a>
-                <a 
-                  href="#" 
-                  style={{ ...styles.socialLink, background: '#1877f215' }}
+                </button>
+                
+                <button
+                  onClick={handleFacebook}
+                  style={{ 
+                    ...styles.socialLink, 
+                    background: '#1877f215',
+                    cursor: 'pointer'
+                  }}
                   title="Facebook"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#1877f225';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#1877f215';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <Send size={20} color="#1877f2" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -1325,7 +1439,8 @@ const styles = {
   socialLinks: {
     display: "flex",
     gap: "12px",
-    marginTop: "6px"
+    marginTop: "6px",
+    flexWrap: "wrap"
   },
   socialLink: {
     display: "flex",
