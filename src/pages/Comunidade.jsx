@@ -1,4 +1,9 @@
-import { useState } from "react";
+// src/pages/Comunidade.jsx
+import { useState, useEffect } from "react";
+import { useAuth } from '../contexts/AuthContext';
+import { communityService } from '../services/communityService';
+import CriarComunidadeModal from '../components/CriarComunidadeModal';
+import Swal from 'sweetalert2';
 import {
   Globe,
   Lock,
@@ -7,416 +12,721 @@ import {
   Church,
   Heart,
   Search,
-  User,
-  MessageCircle,
-  Star,
   Shield,
   CheckCircle,
   Plus,
-  Minus,
   Group,
-  Share2,
-  MapPin,
-  Calendar,
-  BookOpen,
-  Coffee,
-  Sparkles
+  Activity,
+  Loader2,
+  AlertCircle,
+  PlusCircle,
+  Trash2,
+  Edit
 } from 'lucide-react';
 
+// Mapeamento de ícones
+const iconMap = {
+  Globe: Globe,
+  Users: Users,
+  Music: Music,
+  Church: Church,
+  Heart: Heart,
+  Shield: Shield,
+  Group: Group,
+  BookOpen: BookOpen,
+  Sparkles: Sparkles,
+  Star: Star,
+  MessageCircle: MessageCircle,
+  Coffee: Coffee,
+};
+
+// Importar ícones adicionais
+import { BookOpen, Sparkles, Star, MessageCircle, Coffee } from 'lucide-react';
+
 export default function Comunidade() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [comunidadesGlobais, setComunidadesGlobais] = useState([]);
+  const [comunidadesPrivadas, setComunidadesPrivadas] = useState([]);
+  const [comunidadesUsuario, setComunidadesUsuario] = useState([]);
+  const [totalMembros, setTotalMembros] = useState(0);
+  const [totalComunidades, setTotalComunidades] = useState(0);
   const [activeTab, setActiveTab] = useState("globais");
   const [searchTerm, setSearchTerm] = useState("");
-  const [comunidadesUsuario, setComunidadesUsuario] = useState([]);
+  const [participando, setParticipando] = useState({});
+  const [modalCriarOpen, setModalCriarOpen] = useState(false);
 
-  const comunidadesGlobais = [
-    {
-      id: 1,
-      nome: "Comunidade Global",
-      membros: 1523,
-      descricao: "Comunidade principal para todos os membros",
-      whatsapp: "https://chat.whatsapp.com/AAAA111111",
-      icon: Globe,
-      color: "#8b5e3c"
-    },
-    {
-      id: 2,
-      nome: "Jovens Cristãos",
-      membros: 456,
-      descricao: "Espaço para jovens compartilharem sua fé",
-      whatsapp: "https://chat.whatsapp.com/BBBB222222",
-      icon: Users,
-      color: "#2563eb"
-    },
-    {
-      id: 3,
-      nome: "Músicos e Adoradores",
-      membros: 289,
-      descricao: "Para quem ama adorar através da música",
-      whatsapp: "https://chat.whatsapp.com/CCCC333333",
-      icon: Music,
-      color: "#7c3aed"
-    },
-  ];
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
-  const comunidadesPrivadas = [
-    {
-      id: 4,
-      nome: "Líderes de Célula",
-      membros: 89,
-      descricao: "Grupo exclusivo para líderes",
-      whatsapp: "https://chat.whatsapp.com/DDDD444444",
-      icon: Shield,
-      color: "#dc2626"
-    },
-    {
-      id: 5,
-      nome: "Missionários em Ação",
-      membros: 67,
-      descricao: "Comunidade missionária",
-      whatsapp: "https://chat.whatsapp.com/EEEE555555",
-      icon: Heart,
-      color: "#059669"
-    },
-  ];
-
-  const handleParticipar = (comunidade) => {
-    if (!comunidadesUsuario.includes(comunidade.id)) {
-      setComunidadesUsuario([
-        ...comunidadesUsuario,
-        comunidade.id,
+  const carregarDados = async () => {
+    try {
+      setLoading(true);
+      
+      const [globais, privadas] = await Promise.all([
+        communityService.getComunidadesGlobais(),
+        communityService.getComunidadesPrivadas()
       ]);
 
-      window.open(comunidade.whatsapp, "_blank");
-    } else {
-      setComunidadesUsuario(
-        comunidadesUsuario.filter(
-          (id) => id !== comunidade.id
-        )
-      );
+      setComunidadesGlobais(globais || []);
+      setComunidadesPrivadas(privadas || []);
+
+      if (user) {
+        const participadas = await communityService.getComunidadesDoUsuario(user.id);
+        const ids = participadas.map(item => item.comunidade_id || item.id);
+        setComunidadesUsuario(ids);
+      }
+
+      const todas = [...(globais || []), ...(privadas || [])];
+      setTotalComunidades(todas.length);
+      
+      const total = todas.reduce((acc, c) => acc + (c.membros || 0), 0);
+      setTotalMembros(total);
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const comunidadesAtuais =
-    activeTab === "globais"
-      ? comunidadesGlobais
-      : comunidadesPrivadas;
+  const handleParticipar = async (comunidade) => {
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para participar das comunidades.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      return;
+    }
 
-  const comunidadesFiltradas =
-    comunidadesAtuais.filter((com) =>
-      com.nome
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+    const isParticipando = comunidadesUsuario.includes(comunidade.id);
+
+    try {
+      setParticipando(prev => ({ ...prev, [comunidade.id]: true }));
+
+      if (isParticipando) {
+        await communityService.sair(comunidade.id, user.id);
+        setComunidadesUsuario(prev => prev.filter(id => id !== comunidade.id));
+        
+        Swal.fire({
+          icon: 'info',
+          title: 'Você saiu!',
+          text: `Você saiu da comunidade ${comunidade.nome}`,
+          timer: 2000,
+          showConfirmButton: true,
+          confirmButtonColor: '#8b5e3c',
+        });
+      } else {
+        await communityService.participar(comunidade.id, user.id);
+        setComunidadesUsuario(prev => [...prev, comunidade.id]);
+        
+        if (comunidade.whatsapp) {
+          window.open(comunidade.whatsapp, "_blank");
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Bem-vindo!',
+          text: `Você agora faz parte da comunidade ${comunidade.nome}`,
+          timer: 2000,
+          showConfirmButton: true,
+          confirmButtonColor: '#8b5e3c',
+        });
+      }
+
+      await carregarDados();
+
+    } catch (error) {
+      console.error('Erro ao participar/sair:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Ops...',
+        text: error.message || 'Erro ao processar sua solicitação.',
+        confirmButtonColor: '#8b5e3c',
+      });
+    } finally {
+      setParticipando(prev => ({ ...prev, [comunidade.id]: false }));
+    }
+  };
+
+  const handleCommunityCreated = (novaComunidade) => {
+    // Adicionar a nova comunidade à lista correta
+    if (novaComunidade.tipo === 'global') {
+      setComunidadesGlobais(prev => [novaComunidade, ...prev]);
+    } else {
+      setComunidadesPrivadas(prev => [novaComunidade, ...prev]);
+    }
+    setTotalComunidades(prev => prev + 1);
+    setTotalMembros(prev => prev + 1);
+    
+    // Se o usuário criou, ele automaticamente participa
+    if (user) {
+      setComunidadesUsuario(prev => [...prev, novaComunidade.id]);
+    }
+  };
+
+  const handleDeletarComunidade = async (comunidade) => {
+    if (!user) return;
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: `Você está prestes a deletar a comunidade "${comunidade.nome}". Esta ação não pode ser desfeita!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await communityService.deletarComunidade(comunidade.id, user.id);
+      
+      // Remover da lista
+      if (comunidade.tipo === 'global') {
+        setComunidadesGlobais(prev => prev.filter(c => c.id !== comunidade.id));
+      } else {
+        setComunidadesPrivadas(prev => prev.filter(c => c.id !== comunidade.id));
+      }
+      setTotalComunidades(prev => prev - 1);
+      setTotalMembros(prev => prev - (comunidade.membros || 0));
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Deletada!',
+        text: `A comunidade "${comunidade.nome}" foi removida.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      });
+
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message,
+        confirmButtonColor: '#8b5e3c',
+      });
+    }
+  };
+
+  const comunidadesAtuais = activeTab === "globais" ? comunidadesGlobais : comunidadesPrivadas;
+  
+  const comunidadesFiltradas = comunidadesAtuais.filter(com =>
+    com?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    com?.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f2ea' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#8b5e3c' }} />
+      </div>
     );
-
-  // Estilos em objeto para melhor organização
-  const styles = {
-    container: {
-      background: "#f7f4ed",
-      minHeight: "100vh",
-      padding: "40px 20px",
-    },
-    wrapper: {
-      maxWidth: "1200px",
-      margin: "0 auto",
-    },
-    header: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: "8px",
-      flexWrap: "wrap",
-      gap: "16px",
-    },
-    title: {
-      fontSize: "42px",
-      color: "#1e293b",
-      margin: "0",
-      fontWeight: "700",
-      letterSpacing: "-0.5px",
-    },
-    subtitle: {
-      color: "#64748b",
-      marginBottom: "40px",
-      fontSize: "17px",
-    },
-    tabsContainer: {
-      display: "flex",
-      gap: "30px",
-      borderBottom: "1px solid #d6d3d1",
-      marginBottom: "30px",
-    },
-    tabButton: (isActive) => ({
-      background: "none",
-      border: "none",
-      paddingBottom: "14px",
-      cursor: "pointer",
-      color: isActive ? "#7c4a2d" : "#64748b",
-      fontWeight: "600",
-      borderBottom: isActive ? "2px solid #7c4a2d" : "2px solid transparent",
-      fontSize: "16px",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      transition: "all 0.2s",
-    }),
-    searchContainer: {
-      display: "flex",
-      justifyContent: "center",
-      marginBottom: "35px",
-    },
-    searchInput: {
-      width: "500px",
-      maxWidth: "100%",
-      padding: "14px 18px 14px 44px",
-      borderRadius: "12px",
-      border: "1px solid #d6d3d1",
-      fontSize: "15px",
-      background: "#fff",
-      outline: "none",
-      transition: "all 0.3s",
-      position: "relative",
-    },
-    searchWrapper: {
-      position: "relative",
-      width: "500px",
-      maxWidth: "100%",
-    },
-    searchIcon: {
-      position: "absolute",
-      left: "14px",
-      top: "50%",
-      transform: "translateY(-50%)",
-      color: "#94a3b8",
-    },
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 320px))",
-      justifyContent: "center",
-      gap: "24px",
-    },
-    card: {
-      background: "#fff",
-      borderRadius: "18px",
-      padding: "24px",
-      border: "1px solid #e7e5e4",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-      transition: "box-shadow 0.3s, transform 0.3s",
-    },
-    cardHover: {
-      boxShadow: "0 12px 40px rgba(0,0,0,0.08)",
-      transform: "translateY(-4px)",
-    },
-    iconBox: (color) => ({
-      width: "58px",
-      height: "58px",
-      background: color,
-      borderRadius: "14px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "white",
-      marginBottom: "18px",
-    }),
-    cardTitle: {
-      fontSize: "22px",
-      color: "#0f172a",
-      marginBottom: "10px",
-      fontWeight: "600",
-    },
-    memberInfo: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      color: "#64748b",
-      marginBottom: "14px",
-      fontSize: "14px",
-    },
-    description: {
-      color: "#475569",
-      lineHeight: "1.6",
-      marginBottom: "22px",
-      fontSize: "15px",
-    },
-    button: (isParticipando) => ({
-      width: "100%",
-      padding: "14px",
-      background: isParticipando ? "#16a34a" : "#7c4a2d",
-      color: "#fff",
-      border: "none",
-      borderRadius: "12px",
-      cursor: "pointer",
-      fontWeight: "600",
-      fontSize: "15px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "8px",
-      transition: "all 0.3s",
-    }),
-    buttonHover: (isParticipando) => ({
-      background: isParticipando ? "#15803d" : "#6b3f2a",
-      transform: "scale(1.02)",
-    }),
-  };
-
-  // Renderização condicional para ícones das tabs
-  const TabIcon = ({ tab }) => {
-    if (tab === "globais") return <Globe size={18} />;
-    return <Lock size={18} />;
-  };
+  }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.wrapper}>
-        <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>Comunidades</h1>
-            <p style={styles.subtitle}>
-              Conecte-se com irmãos em comunidades globais ou privadas
-            </p>
-          </div>
+    <div style={{ background: '#f5f2ea', minHeight: 'calc(100vh - 70px)', padding: '24px 16px' }}>
+      <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+
+        {/* BANNER - COMUNIDADES */}
+        <div style={{
+          background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
+          borderRadius: '20px',
+          padding: '40px 36px',
+          color: 'white',
+          marginBottom: '28px',
+          boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Elementos decorativos... (mantenha os mesmos do Feed) */}
           <div style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-            background: "white",
-            padding: "6px 16px 6px 12px",
-            borderRadius: "100px",
-            border: "1px solid #e7e5e4",
+            position: 'absolute',
+            right: '-20px',
+            top: '-20px',
+            fontSize: '180px',
+            opacity: 0.06,
+            color: 'white',
+            transform: 'rotate(15deg)',
+            pointerEvents: 'none',
+            fontFamily: 'serif',
           }}>
-            <Users size={18} color="#8b5e3c" />
-            <span style={{ fontSize: "14px", color: "#64748b" }}>
-              {comunidadesUsuario.length} participando
-            </span>
+            ✝
+          </div>
+          
+          <div style={{
+            position: 'absolute',
+            left: '-60px',
+            bottom: '-60px',
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            pointerEvents: 'none',
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            right: '40px',
+            bottom: '-80px',
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.04)',
+            pointerEvents: 'none',
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+              gap: '16px',
+            }}>
+              <div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  background: 'rgba(255,255,255,0.15)',
+                  padding: '6px 16px 6px 12px',
+                  borderRadius: '100px',
+                  marginBottom: '16px',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <Church size={18} style={{ opacity: 0.9 }} />
+                  <span style={{ fontSize: '13px', fontWeight: '500', letterSpacing: '0.5px', opacity: 0.9 }}>
+                    Comunidades de Fé
+                  </span>
+                </div>
+
+                <h1 style={{
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: '0 0 8px 0',
+                  letterSpacing: '-0.5px',
+                  lineHeight: 1.2,
+                }}>
+                  Comunidades
+                </h1>
+
+                <p style={{
+                  fontSize: '17px',
+                  opacity: 0.95,
+                  margin: '0 0 4px 0',
+                  fontWeight: '400',
+                  lineHeight: 1.6,
+                }}>
+                  Conecte-se com irmãos em comunidades globais ou privadas
+                </p>
+              </div>
+
+              {/* Botão Criar Comunidade - visível para qualquer usuário logado */}
+              {user && (
+                <button
+                  onClick={() => setModalCriarOpen(true)}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '14px',
+                    padding: '12px 20px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontWeight: '600',
+                    fontSize: '15px',
+                    transition: 'all 0.3s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <PlusCircle size={20} />
+                  Criar Comunidade
+                </button>
+              )}
+            </div>
+
+            <div style={{
+              marginTop: '14px',
+              padding: '12px 18px',
+              background: 'rgba(255,255,255,0.10)',
+              borderRadius: '12px',
+              borderLeft: '3px solid rgba(255,255,255,0.3)',
+              backdropFilter: 'blur(10px)',
+              maxWidth: '500px',
+            }}>
+              <p style={{
+                fontSize: '14px',
+                fontStyle: 'italic',
+                margin: 0,
+                opacity: 0.9,
+                lineHeight: 1.6,
+              }}>
+                "Porque, assim como o corpo é um e tem muitos membros, e todos os membros, sendo muitos, são um só corpo, assim é Cristo também"
+              </p>
+              <p style={{
+                fontSize: '13px',
+                margin: '4px 0 0 0',
+                opacity: 0.7,
+                fontWeight: '300',
+              }}>
+                — 1 Coríntios 12:12
+              </p>
+            </div>
+
+            {/* Estatísticas */}
+            <div style={{
+              display: 'flex',
+              gap: '28px',
+              marginTop: '18px',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {totalMembros} membros
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Group size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {totalComunidades} comunidades
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {comunidadesUsuario.length} participando
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ABAS */}
-        <div style={styles.tabsContainer}>
+        <div style={{
+          display: 'flex',
+          gap: '30px',
+          borderBottom: '1px solid #d6d3d1',
+          marginBottom: '30px',
+          background: 'white',
+          padding: '0 20px',
+          borderRadius: '18px 18px 0 0',
+        }}>
           <button
             onClick={() => setActiveTab("globais")}
-            style={styles.tabButton(activeTab === "globais")}
-            onMouseEnter={(e) => {
-              if (activeTab !== "globais") {
-                e.currentTarget.style.color = "#7c4a2d";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== "globais") {
-                e.currentTarget.style.color = "#64748b";
-              }
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '18px 0 14px 0',
+              cursor: 'pointer',
+              color: activeTab === "globais" ? '#7c4a2d' : '#64748b',
+              fontWeight: '600',
+              borderBottom: activeTab === "globais" ? '3px solid #7c4a2d' : '3px solid transparent',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
             }}
           >
             <Globe size={18} />
-            Comunidades Globais
+            Comunidades Globais ({comunidadesGlobais.length})
           </button>
 
           <button
             onClick={() => setActiveTab("privadas")}
-            style={styles.tabButton(activeTab === "privadas")}
-            onMouseEnter={(e) => {
-              if (activeTab !== "privadas") {
-                e.currentTarget.style.color = "#7c4a2d";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== "privadas") {
-                e.currentTarget.style.color = "#64748b";
-              }
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '18px 0 14px 0',
+              cursor: 'pointer',
+              color: activeTab === "privadas" ? '#7c4a2d' : '#64748b',
+              fontWeight: '600',
+              borderBottom: activeTab === "privadas" ? '3px solid #7c4a2d' : '3px solid transparent',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
             }}
           >
             <Lock size={18} />
-            Comunidades Privadas
+            Comunidades Privadas ({comunidadesPrivadas.length})
           </button>
         </div>
 
         {/* BUSCA */}
-        <div style={styles.searchContainer}>
-          <div style={styles.searchWrapper}>
-            <Search size={20} style={styles.searchIcon} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '35px',
+        }}>
+          <div style={{
+            position: 'relative',
+            width: '500px',
+            maxWidth: '100%',
+          }}>
+            <Search size={20} style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#94a3b8',
+            }} />
             <input
               type="text"
               placeholder="Buscar comunidades..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.searchInput}
+              style={{
+                width: '100%',
+                padding: '14px 18px 14px 44px',
+                borderRadius: '12px',
+                border: '1px solid #d6d3d1',
+                fontSize: '15px',
+                background: '#fff',
+                outline: 'none',
+                transition: 'all 0.3s',
+                color: '#000',
+              }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#7c4a2d";
-                e.currentTarget.style.boxShadow = "0 0 0 4px rgba(124, 74, 45, 0.08)";
+                e.currentTarget.style.borderColor = '#7c4a2d';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124, 74, 45, 0.08)';
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#d6d3d1";
-                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.borderColor = '#d6d3d1';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
           </div>
         </div>
 
         {/* CARDS */}
-        <div style={styles.grid}>
-          {comunidadesFiltradas.map((com) => {
-            const isParticipando = comunidadesUsuario.includes(com.id);
-            const IconComponent = com.icon || Globe;
-
-            return (
-              <div
-                key={com.id}
-                style={styles.card}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = styles.cardHover.boxShadow;
-                  e.currentTarget.style.transform = styles.cardHover.transform;
+        {comunidadesFiltradas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '18px' }}>
+            <AlertCircle size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+            <p style={{ color: '#64748b', fontSize: '18px' }}>
+              {searchTerm ? 'Nenhuma comunidade encontrada com esse termo' : 'Nenhuma comunidade disponível'}
+            </p>
+            {user && (
+              <button
+                onClick={() => setModalCriarOpen(true)}
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 24px',
+                  background: '#8b5e3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '15px',
+                  transition: 'all 0.3s',
                 }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#6b3f2a'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#8b5e3c'}
               >
-                <div style={styles.iconBox(com.color || "#8b5e3c")}>
-                  <IconComponent size={28} />
-                </div>
+                <PlusCircle size={18} style={{ marginRight: '8px' }} />
+                Criar primeira comunidade
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 320px))',
+            justifyContent: 'center',
+            gap: '24px',
+          }}>
+            {comunidadesFiltradas.map((com) => {
+              const isParticipando = comunidadesUsuario.includes(com.id);
+              const IconComponent = iconMap[com.icone] || Globe;
+              const isCriador = user && com.criado_por === user.id;
 
-                <h2 style={styles.cardTitle}>
-                  {com.nome}
-                </h2>
-
-                <div style={styles.memberInfo}>
-                  <Users size={16} />
-                  <span>{com.membros} membros</span>
-                </div>
-
-                <p style={styles.description}>
-                  {com.descricao}
-                </p>
-
-                <button
-                  onClick={() => handleParticipar(com)}
-                  style={styles.button(isParticipando)}
+              return (
+                <div
+                  key={com.id}
+                  style={{
+                    background: '#fff',
+                    borderRadius: '18px',
+                    padding: '24px',
+                    border: '1px solid #e7e5e4',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'box-shadow 0.3s, transform 0.3s',
+                    position: 'relative',
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = isParticipando ? "#15803d" : "#6b3f2a";
-                    e.currentTarget.style.transform = "scale(1.02)";
+                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isParticipando ? "#16a34a" : "#7c4a2d";
-                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {isParticipando ? (
-                    <>
-                      <CheckCircle size={18} />
-                      Participando
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={18} />
-                      Participar
-                    </>
+                  {/* Badge de criador */}
+                  {isCriador && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: '#8b5e3c',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '100px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}>
+                      👑 Criador
+                    </div>
                   )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+
+                  {/* Botão deletar (apenas criador) */}
+                  {isCriador && (
+                    <button
+                      onClick={() => handleDeletarComunidade(com)}
+                      style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        right: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      title="Deletar comunidade"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+
+                  <div style={{
+                    width: '58px',
+                    height: '58px',
+                    background: com.cor || '#8b5e3c',
+                    borderRadius: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    marginBottom: '18px',
+                  }}>
+                    <IconComponent size={28} />
+                  </div>
+
+                  <h2 style={{
+                    fontSize: '22px',
+                    color: '#0f172a',
+                    marginBottom: '10px',
+                    fontWeight: '600',
+                  }}>
+                    {com.nome}
+                  </h2>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: '#64748b',
+                    marginBottom: '14px',
+                    fontSize: '14px',
+                  }}>
+                    <Users size={16} />
+                    <span>{com.membros || 0} membros</span>
+                    {com.whatsapp && (
+                      <>
+                        <span style={{ margin: '0 4px' }}>•</span>
+                        <span style={{ color: '#25D366' }}>💬 WhatsApp</span>
+                      </>
+                    )}
+                  </div>
+
+                  <p style={{
+                    color: '#475569',
+                    lineHeight: '1.6',
+                    marginBottom: '22px',
+                    fontSize: '15px',
+                  }}>
+                    {com.descricao}
+                  </p>
+
+                  <button
+                    onClick={() => handleParticipar(com)}
+                    disabled={participando[com.id]}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      background: isParticipando ? '#16a34a' : '#7c4a2d',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: participando[com.id] ? 'not-allowed' : 'pointer',
+                      fontWeight: '600',
+                      fontSize: '15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'all 0.3s',
+                      opacity: participando[com.id] ? 0.7 : 1,
+                    }}
+                  >
+                    {participando[com.id] ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : isParticipando ? (
+                      <>
+                        <CheckCircle size={18} />
+                        Participando
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={18} />
+                        Participar
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Modal de Criação */}
+      <CriarComunidadeModal
+        isOpen={modalCriarOpen}
+        onClose={() => setModalCriarOpen(false)}
+        onCommunityCreated={handleCommunityCreated}
+        user={user}
+      />
     </div>
   );
 }
