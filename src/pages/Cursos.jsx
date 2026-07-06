@@ -6,6 +6,11 @@ import {
   BookOpen,
   Users,
   Clock3,
+  Church,
+  Activity,
+  Sparkles,
+  GraduationCap,
+  Award
 } from "lucide-react";
 
 export default function Cursos() {
@@ -82,15 +87,20 @@ export default function Cursos() {
     },
   ];
 
-        const handleInscrever = (curso) => {
-          const { icone, ...cursoSemIcone } = curso;
+  const handleInscrever = (curso) => {
+    const { icone, ...cursoSemIcone } = curso;
 
-          navigate("/cadastro-curso", {
-            state: {
-              curso: cursoSemIcone,
-            },
-          });
-        };
+    navigate("/cadastro-curso", {
+      state: {
+        curso: cursoSemIcone,
+      },
+    });
+  };
+
+  // Total de alunos e cursos
+  const totalAlunos = cursos.reduce((acc, curso) => acc + curso.alunos, 0);
+  const totalCursos = cursos.length;
+
   return (
     <div
       style={{
@@ -105,30 +115,155 @@ export default function Cursos() {
           margin: "0 auto",
         }}
       >
-        {/* TÍTULO */}
-        <div style={{ marginBottom: "35px" }}>
-          <h1
-            style={{
-              fontSize: "34px",
-              fontWeight: "700",
-              color: "#0f172a",
-              marginBottom: "8px",
-            }}
-          >
-            Cursos Cristãos
-          </h1>
+        {/* ============================================ */}
+        {/* BANNER - CURSOS (mesmo estilo das outras páginas) */}
+        {/* ============================================ */}
+        <div style={{
+          background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
+          borderRadius: '20px',
+          padding: '40px 36px',
+          color: 'white',
+          marginBottom: '28px',
+          boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Elemento decorativo */}
+          <div style={{
+            position: 'absolute',
+            right: '-20px',
+            top: '-20px',
+            fontSize: '180px',
+            opacity: 0.06,
+            color: 'white',
+            transform: 'rotate(15deg)',
+            pointerEvents: 'none',
+            fontFamily: 'serif',
+          }}>
+            ✝
+          </div>
+          
+          <div style={{
+            position: 'absolute',
+            left: '-60px',
+            bottom: '-60px',
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            pointerEvents: 'none',
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            right: '40px',
+            bottom: '-80px',
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.04)',
+            pointerEvents: 'none',
+          }} />
 
-          <p
-            style={{
-              color: "#64748b",
-              fontSize: "16px",
-            }}
-          >
-            Aprenda e desenvolva seus talentos para servir ao Reino
-          </p>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* Tag dos cursos */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: 'rgba(255,255,255,0.15)',
+              padding: '6px 16px 6px 12px',
+              borderRadius: '100px',
+              marginBottom: '16px',
+              backdropFilter: 'blur(10px)',
+            }}>
+              <GraduationCap size={18} style={{ opacity: 0.9 }} />
+              <span style={{ fontSize: '13px', fontWeight: '500', letterSpacing: '0.5px', opacity: 0.9 }}>
+                Educação Cristã
+              </span>
+            </div>
+
+            {/* Título principal */}
+            <h1 style={{
+              fontSize: '32px',
+              fontWeight: '700',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.5px',
+              lineHeight: 1.2,
+            }}>
+              Cursos Cristãos
+            </h1>
+
+            {/* Subtítulo */}
+            <p style={{
+              fontSize: '17px',
+              opacity: 0.95,
+              margin: '0 0 4px 0',
+              fontWeight: '400',
+              lineHeight: 1.6,
+            }}>
+              Aprenda e desenvolva seus talentos para servir ao Reino
+            </p>
+
+            {/* Versículo bíblico */}
+            <div style={{
+              marginTop: '14px',
+              padding: '12px 18px',
+              background: 'rgba(255,255,255,0.10)',
+              borderRadius: '12px',
+              borderLeft: '3px solid rgba(255,255,255,0.3)',
+              backdropFilter: 'blur(10px)',
+              maxWidth: '500px',
+            }}>
+              <p style={{
+                fontSize: '14px',
+                fontStyle: 'italic',
+                margin: 0,
+                opacity: 0.9,
+                lineHeight: 1.6,
+              }}>
+                "Aplica o teu coração à instrução e os teus ouvidos às palavras do conhecimento"
+              </p>
+              <p style={{
+                fontSize: '13px',
+                margin: '4px 0 0 0',
+                opacity: 0.7,
+                fontWeight: '300',
+              }}>
+                — Provérbios 23:12
+              </p>
+            </div>
+
+            {/* Estatísticas */}
+            <div style={{
+              display: 'flex',
+              gap: '28px',
+              marginTop: '18px',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <GraduationCap size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {totalCursos} cursos
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  {totalAlunos} alunos
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Award size={18} style={{ opacity: 0.85 }} />
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                  Certificado reconhecido
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* GRID */}
+        {/* GRID DE CURSOS */}
         <div
           style={{
             display: "grid",
@@ -149,6 +284,15 @@ export default function Cursos() {
                 minHeight: "330px",
                 display: "flex",
                 flexDirection: "column",
+                transition: "box-shadow 0.3s, transform 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.08)";
+                e.currentTarget.style.transform = "translateY(-4px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
               {/* TOPO */}
@@ -333,17 +477,21 @@ export default function Cursos() {
                     </p>
                   </div>
 
-                 <button
+                  <button
                     onClick={() => handleInscrever(curso)}
                     style={{
                       background: "#8b5e3c",
                       color: "white",
                       border: "none",
-                      padding: "8px 16px",
+                      padding: "10px 20px",
                       borderRadius: "10px",
                       fontWeight: "600",
                       cursor: "pointer",
+                      fontSize: "14px",
+                      transition: "all 0.3s",
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#6b3f2a"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#8b5e3c"}
                   >
                     Inscrever-se
                   </button>
@@ -403,4 +551,3 @@ export default function Cursos() {
     </div>
   );
 }
-
