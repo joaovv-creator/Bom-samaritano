@@ -21,7 +21,11 @@ import {
   AlertCircle,
   PlusCircle,
   Trash2,
-  Edit
+  BookOpen,
+  Sparkles,
+  Star,
+  MessageCircle,
+  Coffee
 } from 'lucide-react';
 
 // Mapeamento de ícones
@@ -39,9 +43,6 @@ const iconMap = {
   MessageCircle: MessageCircle,
   Coffee: Coffee,
 };
-
-// Importar ícones adicionais
-import { BookOpen, Sparkles, Star, MessageCircle, Coffee } from 'lucide-react';
 
 export default function Comunidade() {
   const { user } = useAuth();
@@ -153,7 +154,6 @@ export default function Comunidade() {
   };
 
   const handleCommunityCreated = (novaComunidade) => {
-    // Adicionar a nova comunidade à lista correta
     if (novaComunidade.tipo === 'global') {
       setComunidadesGlobais(prev => [novaComunidade, ...prev]);
     } else {
@@ -162,7 +162,6 @@ export default function Comunidade() {
     setTotalComunidades(prev => prev + 1);
     setTotalMembros(prev => prev + 1);
     
-    // Se o usuário criou, ele automaticamente participa
     if (user) {
       setComunidadesUsuario(prev => [...prev, novaComunidade.id]);
     }
@@ -188,7 +187,6 @@ export default function Comunidade() {
     try {
       await communityService.deletarComunidade(comunidade.id, user.id);
       
-      // Remover da lista
       if (comunidade.tipo === 'global') {
         setComunidadesGlobais(prev => prev.filter(c => c.id !== comunidade.id));
       } else {
@@ -247,7 +245,6 @@ export default function Comunidade() {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Elementos decorativos... (mantenha os mesmos do Feed) */}
           <div style={{
             position: 'absolute',
             right: '-20px',
@@ -330,7 +327,6 @@ export default function Comunidade() {
                 </p>
               </div>
 
-              {/* Botão Criar Comunidade - visível para qualquer usuário logado */}
               {user && (
                 <button
                   onClick={() => setModalCriarOpen(true)}
@@ -393,7 +389,6 @@ export default function Comunidade() {
               </p>
             </div>
 
-            {/* Estatísticas */}
             <div style={{
               display: 'flex',
               gap: '28px',
@@ -584,7 +579,6 @@ export default function Comunidade() {
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {/* Badge de criador */}
                   {isCriador && (
                     <div style={{
                       position: 'absolute',
@@ -604,7 +598,6 @@ export default function Comunidade() {
                     </div>
                   )}
 
-                  {/* Botão deletar (apenas criador) */}
                   {isCriador && (
                     <button
                       onClick={() => handleDeletarComunidade(com)}
@@ -720,7 +713,6 @@ export default function Comunidade() {
         )}
       </div>
 
-      {/* Modal de Criação */}
       <CriarComunidadeModal
         isOpen={modalCriarOpen}
         onClose={() => setModalCriarOpen(false)}

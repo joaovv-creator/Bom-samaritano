@@ -97,12 +97,109 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // 🔥 FUNÇÃO DE LOGIN - CORRETA
+  const signIn = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      
+      // Recarregar perfil após login
+      if (data?.user) {
+        await carregarPerfil(data.user)
+      }
+      
+      return data
+    } catch (error) {
+      console.error('❌ Erro no login:', error)
+      throw error
+    }
+  }
+
+  // 🔥 FUNÇÃO DE CADASTRO - CORRIGIDA
+  const signUp = async (email, password, nome) => {
+    try {
+      // 1. Criar usuário no auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: nome, // Salva o nome no metadata do usuário
+          },
+        },
+      })
+
+      if (error) throw error
+
+      // 2. Se o usuário foi criado, criar o perfil na tabela profiles
+      if (data?.user) {
+        // Aguarda um pouco para garantir que o usuário foi criado no auth
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Tenta criar o perfil
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email: email,
+              name: nome,
+              role: 'membro',
+              created_at: new Date().toISOString(),
+            },
+          ])
+
+        if (profileError) {
+          console.error('❌ Erro ao criar perfil:', profileError)
+          
+          // Se o perfil já existe, tenta atualizar
+          if (profileError.code === '23505') { // Código de violação de chave única
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                name: nome,
+                email: email,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', data.user.id)
+
+            if (updateError) {
+              console.error('❌ Erro ao atualizar perfil:', updateError)
+            }
+          }
+        } else {
+          console.log('✅ Perfil criado com sucesso!')
+        }
+      }
+
+      return data
+    } catch (error) {
+      console.error('❌ Erro no cadastro:', error)
+      throw error
+    }
+  }
+
+  // 🔥 FUNÇÃO DE LOGOUT
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      setUser(null)
+    } catch (error) {
+      console.error('❌ Erro ao sair:', error)
+      throw error
+    }
+  }
+
   const value = {
     user,
     loading,
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    signUp: (email, password, options) => supabase.auth.signUp({ email, password, options }),
-    signOut: () => supabase.auth.signOut()
+    signIn,
+    signUp,
+    signOut,
   }
 
   return (
@@ -113,5 +210,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

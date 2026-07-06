@@ -8,6 +8,11 @@ import {
   Plus,
   Minus,
   Trash2,
+  Church,
+  BookOpen,
+  Activity,
+  Users,
+  Sparkles
 } from 'lucide-react'
 
 import { useCart } from '../contexts/CartContext'
@@ -42,7 +47,6 @@ function Marketplace() {
       imagem:
         'https://media.istockphoto.com/id/1759751957/pt/foto/biblia-sagrada.webp?a=1&b=1&s=612x612&w=0&k=20&c=31buEX22q6SVqvHE10-0uNI8PiseR_aEr_YrQmOAtOQ=',
     },
-
     {
       id: 2,
       nome: 'Bíblia de Estudo',
@@ -54,7 +58,6 @@ function Marketplace() {
       imagem:
         'https://m.media-amazon.com/images/I/81+e5daLKvL._AC_UF1000,1000_QL80_.jpg',
     },
-
     {
       id: 3,
       nome: 'O Peregrino',
@@ -62,12 +65,10 @@ function Marketplace() {
       avaliacao: 5.0,
       avaliacoes: 187,
       categoria: 'livros',
-      descricao:
-        'John Bunyan - Clássico da literatura cristã',
+      descricao: 'John Bunyan - Clássico da literatura cristã',
       imagem:
         'https://images.tcdn.com.br/img/img_prod/1199365/livro_o_peregrino_john_bunyan_capa_dura_871_1_3b00167d9bc22d624b7b38e2778486f7.jpg',
     },
-
     {
       id: 4,
       nome: 'Em Seus Passos',
@@ -75,12 +76,10 @@ function Marketplace() {
       avaliacao: 5.0,
       avaliacoes: 187,
       categoria: 'livros',
-      descricao:
-        'Charles Sheldon - O que Jesus faria?',
+      descricao: 'Charles Sheldon - O que Jesus faria?',
       imagem:
         'https://plenitudedistribuidora.com.br/cdn/shop/files/282252-1.jpg?v=1772137658',
     },
-
     {
       id: 5,
       nome: 'Bíblia Infantil',
@@ -88,12 +87,10 @@ function Marketplace() {
       avaliacao: 5.0,
       avaliacoes: 187,
       categoria: 'biblias',
-      descricao:
-        'Histórias ilustradas para crianças',
+      descricao: 'Histórias ilustradas para crianças',
       imagem:
         'https://livrariascuritiba.vteximg.com.br/arquivos/ids/1868407-525-525/LV450888.jpg?v=638682192530600000',
     },
-
     {
       id: 6,
       nome: 'Cristianismo Puro e Simples',
@@ -101,12 +98,10 @@ function Marketplace() {
       avaliacao: 5.0,
       avaliacoes: 187,
       categoria: 'livros',
-      descricao:
-        'C.S. Lewis - Obra-prima da apologética',
+      descricao: 'C.S. Lewis - Obra-prima da apologética',
       imagem:
         'https://acdn-us.mitiendanube.com/stores/001/677/619/products/cristianismo-puro-e-simples-c-s-lewis-editora-thomas-nelson-min1-b84493540daa6a223b16360545390730-1024-1024.webp',
     },
-
   ]
 
   const produtosFiltrados = produtos.filter(
@@ -125,7 +120,10 @@ function Marketplace() {
 
       return matchCategoria && matchBusca
     }
-  ) 
+  )
+
+  // Total de produtos disponíveis
+  const totalProdutos = produtos.length
 
   return (
     <>
@@ -144,32 +142,208 @@ function Marketplace() {
             margin: '0 auto',
           }}
         >
-          {/* HEADER */}
+          {/* ============================================ */}
+          {/* BANNER - MARKETPLACE (mesmo estilo das outras páginas) */}
+          {/* ============================================ */}
+          <div style={{
+            background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
+            borderRadius: '20px',
+            padding: '40px 36px',
+            color: 'white',
+            marginBottom: '28px',
+            boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Elemento decorativo */}
+            <div style={{
+              position: 'absolute',
+              right: '-20px',
+              top: '-20px',
+              fontSize: '180px',
+              opacity: 0.06,
+              color: 'white',
+              transform: 'rotate(15deg)',
+              pointerEvents: 'none',
+              fontFamily: 'serif',
+            }}>
+              ✝
+            </div>
+            
+            <div style={{
+              position: 'absolute',
+              left: '-60px',
+              bottom: '-60px',
+              width: '200px',
+              height: '200px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.05)',
+              pointerEvents: 'none',
+            }} />
+            
+            <div style={{
+              position: 'absolute',
+              right: '40px',
+              bottom: '-80px',
+              width: '160px',
+              height: '160px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.04)',
+              pointerEvents: 'none',
+            }} />
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              {/* Tag da loja */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                background: 'rgba(255,255,255,0.15)',
+                padding: '6px 16px 6px 12px',
+                borderRadius: '100px',
+                marginBottom: '16px',
+                backdropFilter: 'blur(10px)',
+              }}>
+                <BookOpen size={18} style={{ opacity: 0.9 }} />
+                <span style={{ fontSize: '13px', fontWeight: '500', letterSpacing: '0.5px', opacity: 0.9 }}>
+                  Livraria Cristã
+                </span>
+              </div>
+
+              {/* Título principal */}
+              <h1 style={{
+                fontSize: '32px',
+                fontWeight: '700',
+                margin: '0 0 8px 0',
+                letterSpacing: '-0.5px',
+                lineHeight: 1.2,
+              }}>
+                Marketplace
+              </h1>
+
+              {/* Subtítulo */}
+              <p style={{
+                fontSize: '17px',
+                opacity: 0.95,
+                margin: '0 0 4px 0',
+                fontWeight: '400',
+                lineHeight: 1.6,
+              }}>
+                Bíblias, livros e recursos para fortalecer sua fé
+              </p>
+
+              {/* Versículo bíblico */}
+              <div style={{
+                marginTop: '14px',
+                padding: '12px 18px',
+                background: 'rgba(255,255,255,0.10)',
+                borderRadius: '12px',
+                borderLeft: '3px solid rgba(255,255,255,0.3)',
+                backdropFilter: 'blur(10px)',
+                maxWidth: '500px',
+              }}>
+                <p style={{
+                  fontSize: '14px',
+                  fontStyle: 'italic',
+                  margin: 0,
+                  opacity: 0.9,
+                  lineHeight: 1.6,
+                }}>
+                  "A tua palavra é lâmpada para os meus pés e luz para o meu caminho"
+                </p>
+                <p style={{
+                  fontSize: '13px',
+                  margin: '4px 0 0 0',
+                  opacity: 0.7,
+                  fontWeight: '300',
+                }}>
+                  — Salmos 119:105
+                </p>
+              </div>
+
+              {/* Estatísticas */}
+              <div style={{
+                display: 'flex',
+                gap: '28px',
+                marginTop: '18px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <BookOpen size={18} style={{ opacity: 0.85 }} />
+                  <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                    {totalProdutos} produtos
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={18} style={{ opacity: 0.85 }} />
+                  <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                    {carrinho.length} no carrinho
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={18} style={{ opacity: 0.85 }} />
+                  <span style={{ fontSize: '14px', opacity: 0.85 }}>
+                    {['biblias', 'livros'].length} categorias
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* HEADER COM BUSCA E CARRINHO */}
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '20px',
+              marginBottom: '16px',
               flexWrap: 'wrap',
               gap: '12px',
             }}
           >
-            <div>
-              <h1
+            {/* BUSCA */}
+            <div
+              style={{
+                position: 'relative',
+                flex: 1,
+                maxWidth: '550px',
+              }}
+            >
+              <Search
+                size={18}
                 style={{
-                  fontSize: '28px',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  margin: 0,
+                  position: 'absolute',
+                  left: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#64748b',
                 }}
-              >
-                Livraria Cristã
-              </h1>
+              />
 
-              <p style={{ color: '#64748b', margin: '4px 0 0' }}>
-                Bíblias, livros e recursos para fortalecer sua fé
-              </p>
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar livros..."
+                style={{
+                  width: '100%',
+                  padding: '12px 15px 12px 42px',
+                  borderRadius: '12px',
+                  border: '1px solid #d6d3d1',
+                  outline: 'none',
+                  background: '#fff',
+                  fontSize: '15px',
+                  color: '#000',
+                  transition: 'border-color 0.3s, box-shadow 0.3s',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#8b5e3c'
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(139, 94, 60, 0.08)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d6d3d1'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
             </div>
 
             <button
@@ -178,13 +352,22 @@ function Marketplace() {
                 border: 'none',
                 background: '#8B5A2B',
                 color: '#fff',
-                padding: '12px',
+                padding: '12px 16px',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: '600',
+                fontSize: '14px',
+                transition: 'all 0.3s',
               }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#7b4b2a'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#8B5A2B'}
             >
-              <ShoppingCart size={24} />
+              <ShoppingCart size={20} />
+              <span>Carrinho</span>
 
               {carrinho.length > 0 && (
                 <span
@@ -194,13 +377,14 @@ function Marketplace() {
                     right: '-8px',
                     background: '#dc2626',
                     color: '#fff',
-                    width: '22px',
-                    height: '22px',
+                    width: '24px',
+                    height: '24px',
                     borderRadius: '50%',
                     fontSize: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    fontWeight: '700',
                   }}
                 >
                   {carrinho.length}
@@ -209,47 +393,12 @@ function Marketplace() {
             </button>
           </div>
 
-          {/* BUSCA */}
-          <div
-            style={{
-              position: 'relative',
-              maxWidth: '550px',
-              marginBottom: '20px',
-            }}
-          >
-            <Search
-              size={18}
-              style={{
-                position: 'absolute',
-                left: '14px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#64748b',
-              }}
-            />
-
-            <input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar livros..."
-              style={{
-                width: '100%',
-                padding: '12px 15px 12px 42px',
-                borderRadius: '12px',
-                border: '1px solid #d6d3d1',
-                outline: 'none',
-                background: '#fff',
-                fontSize: '15px',
-              }}
-            />
-          </div>
-
           {/* CATEGORIAS */}
           <div
             style={{
               display: 'flex',
               gap: '10px',
-              marginBottom: '30px',
+              marginBottom: '24px',
               flexWrap: 'wrap',
             }}
           >
@@ -271,149 +420,177 @@ function Marketplace() {
                       ? '#fff'
                       : '#8B5A2B',
                   fontWeight: '600',
-                  transition: '0.3s',
+                  transition: 'all 0.3s',
+                  fontSize: '14px',
+                }}
+                onMouseEnter={(e) => {
+                  if (categoria !== item) {
+                    e.currentTarget.style.background = '#d9cbb7'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (categoria !== item) {
+                    e.currentTarget.style.background = '#e8dcc7'
+                  }
                 }}
               >
-                {item.charAt(0).toUpperCase() +
-                  item.slice(1)}
+                {item.charAt(0).toUpperCase() + item.slice(1)}
               </button>
             ))}
           </div>
 
           {/* PRODUTOS */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: '20px',
-            }}
-          >
-            {produtosFiltrados.map((prod) => (
-              <div
-                key={prod.id}
-                style={{
-                  background: '#fff',
-                  borderRadius: '18px',
-                  overflow: 'hidden',
-                  border: '1px solid #e7e5e4',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <img
-                  src={prod.imagem}
-                  alt={prod.nome}
-                  style={{
-                    width: '100%',
-                    height: '220px',
-                    objectFit: 'cover',
-                  }}
-                />
-
+          {produtosFiltrados.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '18px' }}>
+              <Search size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+              <p style={{ color: '#64748b', fontSize: '18px' }}>
+                Nenhum produto encontrado com esse termo
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '20px',
+              }}
+            >
+              {produtosFiltrados.map((prod) => (
                 <div
+                  key={prod.id}
                   style={{
-                    padding: '18px',
+                    background: '#fff',
+                    borderRadius: '18px',
+                    overflow: 'hidden',
+                    border: '1px solid #e7e5e4',
                     display: 'flex',
                     flexDirection: 'column',
-                    flex: 1,
+                    transition: 'box-shadow 0.3s, transform 0.3s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08)'
+                    e.currentTarget.style.transform = 'translateY(-4px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.transform = 'translateY(0)'
                   }}
                 >
-                  <h2
+                  <img
+                    src={prod.imagem}
+                    alt={prod.nome}
                     style={{
-                      margin: 0,
-                      color: '#1f2937',
-                      fontSize: '18px',
+                      width: '100%',
+                      height: '220px',
+                      objectFit: 'cover',
                     }}
-                  >
-                    {prod.nome}
-                  </h2>
-
-                  <p
-                    style={{
-                      color: '#64748b',
-                      fontSize: '14px',
-                      marginTop: '8px',
-                      lineHeight: '1.5',
-                      flex: 1,
-                    }}
-                  >
-                    {prod.descricao}
-                  </p>
+                  />
 
                   <div
                     style={{
+                      padding: '18px',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      marginTop: '10px',
+                      flexDirection: 'column',
+                      flex: 1,
                     }}
                   >
-                    <Star
-                      size={14}
-                      color="#facc15"
-                      fill="#facc15"
-                    />
-
-                    <span
+                    <h2
                       style={{
+                        margin: 0,
                         color: '#1f2937',
-                        fontWeight: '600',
+                        fontSize: '18px',
                       }}
                     >
-                      {prod.avaliacao}
-                    </span>
+                      {prod.nome}
+                    </h2>
 
-                    <span
+                    <p
                       style={{
-                        fontSize: '12px',
                         color: '#64748b',
+                        fontSize: '14px',
+                        marginTop: '8px',
+                        lineHeight: '1.5',
+                        flex: 1,
                       }}
                     >
-                      ({prod.avaliacoes})
-                    </span>
+                      {prod.descricao}
+                    </p>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        marginTop: '10px',
+                      }}
+                    >
+                      <Star
+                        size={14}
+                        color="#facc15"
+                        fill="#facc15"
+                      />
+
+                      <span
+                        style={{
+                          color: '#1f2937',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {prod.avaliacao}
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                        }}
+                      >
+                        ({prod.avaliacoes})
+                      </span>
+                    </div>
+
+                    <h3
+                      style={{
+                        marginTop: '12px',
+                        color: '#8B5A2B',
+                        fontSize: '22px',
+                        fontWeight: '700',
+                      }}
+                    >
+                      R$ {prod.preco.toFixed(2)}
+                    </h3>
+
+                    <button
+                      onClick={() =>
+                        adicionarAoCarrinho(prod)
+                      }
+                      style={{
+                        marginTop: '12px',
+                        background: '#16a34a',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '15px',
+                        transition: 'all 0.3s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#15803d'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#16a34a'}
+                    >
+                      Adicionar ao Carrinho
+                    </button>
                   </div>
-
-                  <h3
-                    style={{
-                      marginTop: '12px',
-                      color: '#8B5A2B',
-                      fontSize: '22px',
-                      fontWeight: '700',
-                    }}
-                  >
-                    R$ {prod.preco.toFixed(2)}
-                  </h3>
-
-                  <button
-                    onClick={() =>
-                      adicionarAoCarrinho(prod)
-                    }
-                    style={{
-                      marginTop: '12px',
-                      background: '#16a34a',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '12px',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '15px',
-                      transition: '0.3s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#15803d'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#16a34a'}
-                  >
-                    Adicionar ao Carrinho
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* OVERLAY - z-index maior que o navbar */}
+      {/* OVERLAY */}
       {abrirCarrinho && (
         <div
           onClick={() =>
@@ -427,12 +604,12 @@ function Marketplace() {
             height: '100%',
             background:
               'rgba(0,0,0,0.4)',
-            zIndex: 9999, // ← Mudei de 40 para 9999
+            zIndex: 9999,
           }}
         />
       )}
 
-      {/* CARRINHO LATERAL - z-index maior que o overlay */}
+      {/* CARRINHO LATERAL */}
       <div
         style={{
           position: 'fixed',
@@ -447,7 +624,7 @@ function Marketplace() {
             ? 'translateX(0)'
             : 'translateX(100%)',
           transition: '0.3s ease',
-          zIndex: 10000, // ← Mudei de 50 para 10000
+          zIndex: 10000,
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -481,9 +658,14 @@ function Marketplace() {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              transition: 'background 0.2s',
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <X />
+            <X size={20} />
           </button>
         </div>
 
@@ -500,6 +682,7 @@ function Marketplace() {
               style={{
                 color: '#64748b',
                 textAlign: 'center',
+                marginTop: '40px',
               }}
             >
               Seu carrinho está vazio
@@ -533,6 +716,7 @@ function Marketplace() {
                       margin: 0,
                       fontWeight: '600',
                       color: '#1f2937',
+                      fontSize: '14px',
                     }}
                   >
                     {item.nome}
@@ -567,7 +751,12 @@ function Marketplace() {
                         padding: '6px',
                         borderRadius: '6px',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        transition: 'background 0.2s',
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#d9cbb7'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#e8dcc7'}
                     >
                       <Minus size={16} />
                     </button>
@@ -575,6 +764,8 @@ function Marketplace() {
                     <span
                       style={{
                         fontWeight: '600',
+                        minWidth: '24px',
+                        textAlign: 'center',
                       }}
                     >
                       {item.quantidade}
@@ -591,7 +782,12 @@ function Marketplace() {
                         padding: '6px',
                         borderRadius: '6px',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        transition: 'background 0.2s',
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#d9cbb7'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#e8dcc7'}
                     >
                       <Plus size={16} />
                     </button>
@@ -606,11 +802,16 @@ function Marketplace() {
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s',
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   <Trash2
                     size={18}
-                    color="red"
+                    color="#dc2626"
                   />
                 </button>
               </div>
@@ -623,15 +824,19 @@ function Marketplace() {
           style={{
             padding: '15px',
             borderTop: '1px solid #eee',
+            background: '#f8fafc',
           }}
         >
           <h3
             style={{
               margin: 0,
               color: '#1f2937',
+              display: 'flex',
+              justifyContent: 'space-between',
             }}
           >
-            Total: R$ {total.toFixed(2)}
+            <span>Total:</span>
+            <span style={{ color: '#8B5A2B' }}>R$ {total.toFixed(2)}</span>
           </h3>
 
           <button
@@ -641,7 +846,7 @@ function Marketplace() {
             style={{
               width: '100%',
               marginTop: '15px',
-              padding: '12px',
+              padding: '14px',
               background: '#8B5A2B',
               color: '#fff',
               border: 'none',
@@ -649,6 +854,7 @@ function Marketplace() {
               cursor: 'pointer',
               fontWeight: '600',
               fontSize: '15px',
+              transition: 'all 0.3s',
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#7b4b2a'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#8B5A2B'}
