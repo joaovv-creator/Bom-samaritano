@@ -31,7 +31,7 @@ export const adminService = {
       .eq('ativo', true)
       .order('id', { ascending: true })
     if (error) throw error
-    return data
+    return data || []
   },
 
   async criarAtividade(dados) {
@@ -73,7 +73,7 @@ export const adminService = {
       .eq('ativo', true)
       .order('id', { ascending: true })
     if (error) throw error
-    return data
+    return data || []
   },
 
   async criarProduto(dados) {
@@ -108,34 +108,50 @@ export const adminService = {
   // CURSOS
   // ============================================
   async getCursos() {
-    const { data, error } = await supabase
-      .from('cursos')
-      .select('*')
-      .eq('ativo', true)
-      .order('id', { ascending: true })
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('ativo', true)
+        .order('id', { ascending: true })
+      
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar cursos:', error)
+      return []
+    }
   },
 
   async criarCurso(dados) {
-    const { data, error } = await supabase
-      .from('cursos')
-      .insert([{
-        nome: dados.nome,
+    try {
+      const cursoData = {
+        titulo: dados.titulo,
         professor: dados.professor,
-        alunos: dados.alunos || 0,
-        duracao: dados.duracao,
-        preco: dados.preco,
-        nivel: dados.nivel,
-        cor: dados.cor,
+        duracao: dados.duracao || '',
+        preco: dados.preco || 0,
+        nivel: dados.nivel || '',
+        cor: dados.cor || 'linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)',
         icone: dados.icone || 'Music',
         topicos: dados.topicos || [],
-        ativo: true
-      }])
-      .select()
-      .single()
-    if (error) throw error
-    return data
+        alunos: 0,
+        ativo: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('cursos')
+        .insert([cursoData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Erro ao criar curso:', error)
+      throw error
+    }
   },
 
   async deletarCurso(id) {
@@ -145,6 +161,117 @@ export const adminService = {
       .eq('id', id)
     if (error) throw error
     return true
+  },
+
+  // ============================================
+  // MATRÍCULAS - 🔥 NOVA FUNÇÃO
+  // ============================================
+  async criarMatricula(dados) {
+    try {
+      console.log('📝 Criando matrícula com dados:', dados)
+
+      // 1. Verificar se já está matriculado
+      const { data: existing, error: checkError } = await supabase
+        .from('matriculas')
+        .select('id')
+        .eq('aluno_id', dados.aluno_id)
+        .eq('curso_id', dados.curso_id)
+        .eq('status', 'ativo')
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
+
+      if (existing) {
+        throw new Error('Você já está matriculado neste curso')
+      }
+
+      // 2. Inserir a matrícula
+      const { data: matricula, error: matriculaError } = await supabase
+        .from('matriculas')
+        .insert([{
+          aluno_id: dados.aluno_id,
+          curso_id: dados.curso_id,
+          status: 'ativo',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+
+      if (matriculaError) {
+        console.error('❌ Erro ao inserir matrícula:', matriculaError)
+        throw matriculaError
+      }
+
+      console.log('✅ Matrícula criada:', matricula)
+
+      // 3. Atualizar o contador de alunos do curso
+      const { data: curso, error: cursoError } = await supabase
+        .from('cursos')
+        .select('alunos')
+        .eq('id', dados.curso_id)
+        .single()
+
+      if (cursoError) {
+        console.error('❌ Erro ao buscar curso:', cursoError)
+        throw cursoError
+      }
+
+      const novoTotal = (curso.alunos || 0) + 1
+
+      const { error: updateError } = await supabase
+        .from('cursos')
+        .update({ 
+          alunos: novoTotal,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', dados.curso_id)
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar alunos:', updateError)
+        throw updateError
+      }
+
+      console.log(`✅ Curso atualizado: ${novoTotal} alunos`)
+
+      return matricula
+    } catch (error) {
+      console.error('❌ Erro ao criar matrícula:', error)
+      throw error
+    }
+  },
+
+  async getMatriculasByUser(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('matriculas')
+        .select('*, cursos(*)')
+        .eq('aluno_id', userId)
+        .eq('status', 'ativo')
+      
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar matrículas do usuário:', error)
+      return []
+    }
+  },
+
+  async getMatriculasByCurso(cursoId) {
+    try {
+      const { data, error } = await supabase
+        .from('matriculas')
+        .select('*, profiles(name, email)')
+        .eq('curso_id', cursoId)
+        .eq('status', 'ativo')
+      
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar matrículas do curso:', error)
+      return []
+    }
   },
 
   // ============================================
@@ -163,7 +290,6 @@ export const adminService = {
   async atualizarDevocional(dados) {
     const hoje = new Date().toISOString().split('T')[0]
     
-    // Verifica se já existe devocional para hoje
     const { data: existente } = await supabase
       .from('devocional_diario')
       .select('id')
@@ -213,7 +339,6 @@ export const adminService = {
       supabase.from('devocional_diario').select('*', { count: 'exact', head: true }),
     ])
 
-    // Buscar vendas (pedidos) - se tiver tabela de pedidos
     let vendas = { total: 0, valor_total: 0 }
     try {
       const { data: pedidos, error: pedidosError } = await supabase

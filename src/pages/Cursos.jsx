@@ -1,4 +1,9 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../contexts/AuthContext';
+import { adminService } from '../services/adminService';
+import { AdminModal } from '../components/AdminModal';
+import Swal from 'sweetalert2';
 import {
   Music,
   Hand,
@@ -10,70 +15,236 @@ import {
   Activity,
   Sparkles,
   GraduationCap,
-  Award
+  Award,
+  Loader2,
+  PlusCircle,
+  X,
+  Trash2,
+  CheckCircle
 } from "lucide-react";
+
+// Mapeamento de ícones
+const iconMap = {
+  Music: Music,
+  Hand: Hand,
+  Mic: Mic,
+  BookOpen: BookOpen,
+  Users: Users,
+  Clock3: Clock3,
+  Church: Church,
+  Activity: Activity,
+  Sparkles: Sparkles,
+  GraduationCap: GraduationCap,
+  Award: Award
+};
 
 export default function Cursos() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [cursos, setCursos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [modalCriarOpen, setModalCriarOpen] = useState(false);
+  const [deletando, setDeletando] = useState({});
+  const [carregandoAdmin, setCarregandoAdmin] = useState(true);
+  // 🔥 Estado para armazenar os IDs dos cursos que o usuário está inscrito
+  const [cursosInscritos, setCursosInscritos] = useState([]);
 
-  const cursos = [
-    {
-      id: 1,
-      nome: "Curso de Música para Louvor",
-      professor: "Carlos Mendes",
-      alunos: 234,
-      duracao: "8 semanas",
-      preco: 197,
-      nivel: "Iniciante ao Avançado",
-      cor: "linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)",
-      icone: <Music size={30} color="white" />,
-      topicos: ["Teoria Musical", "Técnica Vocal", "Liderança de Louvor", "Instrumentos"],
-    },
-    {
-      id: 2,
-      nome: "Libras para o Ministério",
-      professor: "Ana Paula",
-      alunos: 189,
-      duracao: "10 semanas",
-      preco: 147,
-      nivel: "Básico",
-      cor: "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)",
-      icone: <Hand size={30} color="white" />,
-      topicos: ["Alfabeto", "Vocabulário Religioso", "Interpretação de Louvores", "Prática"],
-    },
-    {
-      id: 3,
-      nome: "Oratória Cristã",
-      professor: "Pastor João Silva",
-      alunos: 312,
-      duracao: "6 semanas",
-      preco: 167,
-      nivel: "Todos os níveis",
-      cor: "linear-gradient(135deg, #ff6a00 0%, #ff4b2b 100%)",
-      icone: <Mic size={30} color="white" />,
-      topicos: ["Dicção", "Postura", "Pregação", "Comunicação Eficaz"],
-    },
-    {
-      id: 4,
-      nome: "Regência de Coral",
-      professor: "Ricardo Santos",
-      alunos: 98,
-      duracao: "12 semanas",
-      preco: 247,
-      nivel: "Intermediário",
-      cor: "linear-gradient(135deg, #22c55e 0%, #10b981 100%)",
-      icone: <Music size={30} color="white" />,
-      topicos: ["Técnicas de Regência", "Arranjos Vocais", "Ensaios", "Performance"],
-    },
-  ];
+  useEffect(() => {
+    carregarCursos();
+    verificarAdmin();
+    carregarMatriculasUsuario();
+  }, []);
+
+  const verificarAdmin = async () => {
+    try {
+      setCarregandoAdmin(true);
+      if (user) {
+        const admin = await adminService.isAdmin(user.id);
+        setIsAdmin(admin);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar admin:', error);
+      setIsAdmin(false);
+    } finally {
+      setCarregandoAdmin(false);
+    }
+  };
+
+  // 🔥 FUNÇÃO PARA CARREGAR MATRÍCULAS DO USUÁRIO
+  const carregarMatriculasUsuario = async () => {
+    if (!user) {
+      setCursosInscritos([]);
+      return;
+    }
+
+    try {
+      const matriculas = await adminService.getMatriculasByUser(user.id);
+      // Extrair apenas os IDs dos cursos
+      const idsInscritos = matriculas.map(m => m.curso_id);
+      setCursosInscritos(idsInscritos);
+      console.log('📚 Cursos inscritos:', idsInscritos);
+    } catch (error) {
+      console.error('Erro ao carregar matrículas:', error);
+      setCursosInscritos([]);
+    }
+  };
+
+  const carregarCursos = async () => {
+    try {
+      setLoading(true);
+      const dados = await adminService.getCursos();
+      console.log('📚 Cursos carregados:', dados);
+      setCursos(dados || []);
+    } catch (error) {
+      console.error('Erro ao carregar cursos:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: 'Não foi possível carregar os cursos.',
+        confirmButtonColor: '#8b5e3c',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCriarCurso = async (dados) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem criar cursos.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      return;
+    }
+
+    try {
+      const topicosArray = dados.topicos ? dados.topicos.split(',').map(t => t.trim()) : [];
+      
+      const novoCurso = await adminService.criarCurso({
+        titulo: dados.titulo,
+        professor: dados.professor,
+        duracao: dados.duracao,
+        preco: dados.preco,
+        nivel: dados.nivel,
+        topicos: topicosArray,
+        cor: dados.cor,
+        icone: dados.icone
+      });
+      
+      setCursos(prev => [...prev, novoCurso]);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Curso criado!',
+        text: `"${novoCurso.titulo}" foi adicionado com sucesso.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      });
+    } catch (error) {
+      console.error('Erro ao criar curso:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível criar o curso.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      throw error;
+    }
+  };
+
+  const handleDeletarCurso = async (id, titulo) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem deletar cursos.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: `Você está prestes a deletar "${titulo}". Esta ação não pode ser desfeita!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setDeletando(prev => ({ ...prev, [id]: true }));
+      await adminService.deletarCurso(id);
+      setCursos(prev => prev.filter(c => c.id !== id));
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Deletado!',
+        text: `"${titulo}" foi removido.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      });
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível deletar o curso.',
+        confirmButtonColor: '#8b5e3c',
+      });
+    } finally {
+      setDeletando(prev => ({ ...prev, [id]: false }));
+    }
+  };
 
   const handleInscrever = (curso) => {
     const { icone, ...cursoSemIcone } = curso;
     navigate("/cadastro-curso", { state: { curso: cursoSemIcone } });
   };
 
-  const totalAlunos = cursos.reduce((acc, curso) => acc + curso.alunos, 0);
+  const totalAlunos = cursos.reduce((acc, curso) => acc + (curso.alunos || 0), 0);
   const totalCursos = cursos.length;
+
+  const camposCurso = [
+    { name: 'titulo', label: 'Título do Curso', type: 'text', placeholder: 'Ex: Curso de Música para Louvor', required: true },
+    { name: 'professor', label: 'Professor', type: 'text', placeholder: 'Ex: Carlos Mendes', required: true },
+    { name: 'duracao', label: 'Duração', type: 'text', placeholder: 'Ex: 8 semanas', required: true },
+    { name: 'preco', label: 'Preço (R$)', type: 'number', placeholder: '197', required: true, min: 0 },
+    { name: 'nivel', label: 'Nível', type: 'text', placeholder: 'Ex: Iniciante ao Avançado', required: true },
+    { name: 'topicos', label: 'Tópicos (separados por vírgula)', type: 'text', placeholder: 'Teoria Musical, Técnica Vocal, Liderança de Louvor', required: true },
+    { name: 'cor', label: 'Cor do Gradiente', type: 'text', placeholder: 'linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)', required: true },
+    { name: 'icone', label: 'Ícone', type: 'select', options: [
+      { value: 'Music', label: 'Música' },
+      { value: 'Hand', label: 'Mão' },
+      { value: 'Mic', label: 'Microfone' },
+      { value: 'BookOpen', label: 'Livro' },
+      { value: 'Users', label: 'Usuários' },
+      { value: 'GraduationCap', label: 'Graduação' },
+      { value: 'Award', label: 'Prêmio' },
+      { value: 'Church', label: 'Igreja' },
+      { value: 'Sparkles', label: 'Brilho' },
+    ], required: true },
+  ];
+
+  if (loading || carregandoAdmin) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f2ea' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#8b5e3c' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "#f5f2ea", minHeight: "100vh", padding: "40px 20px" }}>
@@ -85,7 +256,7 @@ export default function Cursos() {
           borderRadius: '20px',
           padding: '40px 36px',
           color: 'white',
-          marginBottom: '28px',
+          marginBottom: '16px',
           boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
           position: 'relative',
           overflow: 'hidden',
@@ -213,156 +384,319 @@ export default function Cursos() {
           </div>
         </div>
 
-        {/* 🔥 GRID DE CURSOS - RESPONSIVO */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '20px',
-        }}>
-          {cursos.map((curso) => (
-            <div
-              key={curso.id}
+        {/* BOTÃO ADMIN */}
+        {isAdmin && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginBottom: '16px',
+          }}>
+            <button
+              onClick={() => setModalCriarOpen(true)}
               style={{
-                background: "white",
-                borderRadius: "14px",
-                overflow: "hidden",
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                minHeight: "330px",
-                display: "flex",
-                flexDirection: "column",
-                transition: "box-shadow 0.3s, transform 0.3s",
+                background: '#8b5e3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '10px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                boxShadow: '0 4px 12px rgba(139, 94, 60, 0.2)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.08)";
-                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.background = '#6b3f2a'
+                e.currentTarget.style.transform = 'scale(1.02)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
-                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.background = '#8b5e3c'
+                e.currentTarget.style.transform = 'scale(1)'
               }}
             >
-              <div style={{
-                background: curso.cor,
-                height: "90px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                {curso.icone}
-              </div>
+              <PlusCircle size={18} />
+              Adicionar Curso
+            </button>
+          </div>
+        )}
 
-              <div style={{
-                padding: "18px",
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-              }}>
-                <div>
-                  <h2 style={{
-                    fontSize: "18px",
-                    color: "#0f172a",
-                    marginBottom: "6px",
-                    fontWeight: "700",
-                    lineHeight: "1.3",
-                  }}>
-                    {curso.nome}
-                  </h2>
+        {/* GRID DE CURSOS */}
+        {cursos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '18px' }}>
+            <GraduationCap size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+            <p style={{ color: '#64748b', fontSize: '18px' }}>
+              Nenhum curso disponível ainda.
+            </p>
+            {isAdmin && (
+              <button
+                onClick={() => setModalCriarOpen(true)}
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 24px',
+                  background: '#8b5e3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '15px',
+                  transition: 'all 0.3s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#6b3f2a'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#8b5e3c'}
+              >
+                <PlusCircle size={18} style={{ marginRight: '8px' }} />
+                Criar primeiro curso
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px',
+          }}>
+            {cursos.map((curso) => {
+              const IconComponent = iconMap[curso.icone] || Music;
+              // 🔥 VERIFICA SE O USUÁRIO ESTÁ INSCRITO NESTE CURSO
+              const estaInscrito = user && cursosInscritos.includes(curso.id);
 
-                  <p style={{
-                    color: "#64748b",
-                    fontSize: "13px",
-                    marginBottom: "18px",
-                  }}>
-                    Professor {curso.professor}
-                  </p>
+              return (
+                <div
+                  key={curso.id}
+                  style={{
+                    background: "white",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    minHeight: "330px",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "box-shadow 0.3s, transform 0.3s",
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.08)";
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  {/* 🔥 BOTÃO DELETAR - APENAS ADMIN */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletarCurso(curso.id, curso.titulo);
+                      }}
+                      disabled={deletando[curso.id]}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: 'rgba(220, 38, 38, 0.9)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: deletando[curso.id] ? 'not-allowed' : 'pointer',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        transition: 'all 0.2s',
+                        zIndex: 10,
+                        width: '28px',
+                        height: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: deletando[curso.id] ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#dc2626'
+                        e.currentTarget.style.transform = 'scale(1.1)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(220, 38, 38, 0.9)'
+                        e.currentTarget.style.transform = 'scale(1)'
+                      }}
+                    >
+                      {deletando[curso.id] ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <X size={16} />
+                      )}
+                    </button>
+                  )}
 
-                  {/* INFO - Responsivo */}
+                  {/* 🔥 BADGE "INSCRITO" */}
+                  {estaInscrito && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      background: '#16a34a',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '100px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      zIndex: 10,
+                    }}>
+                      <CheckCircle size={12} />
+                      Inscrito
+                    </div>
+                  )}
+
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '8px',
-                    marginBottom: '18px',
-                    textAlign: 'center',
+                    background: curso.cor || 'linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)',
+                    height: "90px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}>
-                    <div>
-                      <Users size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
-                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.alunos} alunos</p>
-                    </div>
-                    <div>
-                      <Clock3 size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
-                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.duracao}</p>
-                    </div>
-                    <div>
-                      <BookOpen size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
-                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.nivel}</p>
-                    </div>
+                    <IconComponent size={30} color="white" />
                   </div>
 
-                  <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', marginBottom: '16px' }} />
-
-                  <h4 style={{ marginBottom: '10px', color: '#0f172a', fontSize: '14px' }}>
-                    O que você vai aprender:
-                  </h4>
-
                   <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    marginBottom: '18px',
+                    padding: "18px",
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
                   }}>
-                    {curso.topicos.map((topico, idx) => (
-                      <span key={idx} style={{
-                        background: "#f1e6d5",
-                        padding: "5px 10px",
-                        borderRadius: "999px",
-                        fontSize: "11px",
-                        color: "#8b5e3c",
+                    <div>
+                      <h2 style={{
+                        fontSize: "18px",
+                        color: "#0f172a",
+                        marginBottom: "6px",
+                        fontWeight: "700",
+                        lineHeight: "1.3",
                       }}>
-                        {topico}
-                      </span>
-                    ))}
+                        {curso.titulo}
+                      </h2>
+
+                      <p style={{
+                        color: "#64748b",
+                        fontSize: "13px",
+                        marginBottom: "18px",
+                      }}>
+                        Professor {curso.professor}
+                      </p>
+
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '8px',
+                        marginBottom: '18px',
+                        textAlign: 'center',
+                      }}>
+                        <div>
+                          <Users size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                          <p style={{ fontSize: '12px', color: '#475569' }}>{curso.alunos || 0} alunos</p>
+                        </div>
+                        <div>
+                          <Clock3 size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                          <p style={{ fontSize: '12px', color: '#475569' }}>{curso.duracao}</p>
+                        </div>
+                        <div>
+                          <BookOpen size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                          <p style={{ fontSize: '12px', color: '#475569' }}>{curso.nivel}</p>
+                        </div>
+                      </div>
+
+                      <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', marginBottom: '16px' }} />
+
+                      <h4 style={{ marginBottom: '10px', color: '#0f172a', fontSize: '14px' }}>
+                        O que você vai aprender:
+                      </h4>
+
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        marginBottom: '18px',
+                      }}>
+                        {curso.topicos?.map((topico, idx) => (
+                          <span key={idx} style={{
+                            background: "#f1e6d5",
+                            padding: "5px 10px",
+                            borderRadius: "999px",
+                            fontSize: "11px",
+                            color: "#8b5e3c",
+                          }}>
+                            {topico}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{
+                      marginTop: "auto",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}>
+                      <div>
+                        <p style={{ color: "#64748b", fontSize: "11px" }}>A partir de</p>
+                        <p style={{ fontSize: "16px", fontWeight: "700", color: "#8b5e3c" }}>
+                          R$ {curso.preco}.00
+                        </p>
+                      </div>
+
+                      {/* 🔥 BOTÃO - MUDA DE ACORDO COM A INSCRIÇÃO */}
+                      {estaInscrito ? (
+                        <button
+                          style={{
+                            background: '#16a34a',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            cursor: 'default',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <CheckCircle size={16} />
+                          Inscrito
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleInscrever(curso)}
+                          style={{
+                            background: "#8b5e3c",
+                            color: "white",
+                            border: "none",
+                            padding: "10px 20px",
+                            borderRadius: "10px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            transition: "all 0.3s",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#6b3f2a"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "#8b5e3c"}
+                        >
+                          Inscrever-se
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* RODAPÉ */}
-                <div style={{
-                  marginTop: "auto",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "10px",
-                }}>
-                  <div>
-                    <p style={{ color: "#64748b", fontSize: "11px" }}>A partir de</p>
-                    <p style={{ fontSize: "16px", fontWeight: "700", color: "#8b5e3c" }}>
-                      R$ {curso.preco}.00
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleInscrever(curso)}
-                    style={{
-                      background: "#8b5e3c",
-                      color: "white",
-                      border: "none",
-                      padding: "10px 20px",
-                      borderRadius: "10px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      transition: "all 0.3s",
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#6b3f2a"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "#8b5e3c"}
-                  >
-                    Inscrever-se
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* BENEFÍCIOS */}
         <div style={{
@@ -390,6 +724,37 @@ export default function Cursos() {
           </ul>
         </div>
       </div>
+
+      {/* MODAL PARA CRIAR CURSO */}
+      {isAdmin && (
+        <AdminModal
+          isOpen={modalCriarOpen}
+          onClose={() => setModalCriarOpen(false)}
+          onSave={handleCriarCurso}
+          title="Novo Curso"
+          fields={camposCurso}
+          initialData={{
+            titulo: '',
+            professor: '',
+            duracao: '',
+            preco: '',
+            nivel: '',
+            topicos: '',
+            cor: 'linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)',
+            icone: 'Music'
+          }}
+        />
+      )}
+
+      <style>{`
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

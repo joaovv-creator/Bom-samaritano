@@ -1,37 +1,98 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from '../contexts/AuthContext';
+import { adminService } from '../services/adminService';
+import Swal from 'sweetalert2';
 
 export default function CadastroCurso() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const curso = location.state?.curso;
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [modalAberto, setModalAberto] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!curso) {
     navigate("/cursos");
     return null;
   }
 
-  const continuar = () => {
+  const continuar = async () => {
     if (!nome || !email || !telefone) {
-      setModalAberto(true);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campos incompletos',
+        text: 'Por favor, preencha todos os campos.',
+        confirmButtonColor: '#8b5e3c',
+        confirmButtonText: 'OK',
+      });
       return;
     }
 
-    navigate("/checkout", {
-      state: {
-        curso,
-        aluno: {
-          nome,
-          telefone,
-          email,
-        },
-      },
-    });
+    // Verificar se o usuário está logado
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Faça login!',
+        text: 'Você precisa estar logado para se inscrever em um curso.',
+        confirmButtonColor: '#8b5e3c',
+        confirmButtonText: 'Fazer login',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login');
+        }
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 🔥 CHAMAR A FUNÇÃO CORRETA
+      await adminService.criarMatricula({
+        aluno_id: user.id,
+        curso_id: curso.id,
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Inscrição realizada!',
+        text: `Você foi inscrito no curso "${curso.titulo}" com sucesso!`,
+        timer: 2500,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+        confirmButtonText: 'Ver meus cursos',
+      }).then(() => {
+        navigate('/perfil');
+      });
+
+    } catch (error) {
+      console.error('Erro ao realizar inscrição:', error);
+      
+      // Verifica se o erro é de matrícula duplicada
+      if (error.message?.includes('já está matriculado') || error.code === '23505') {
+        Swal.fire({
+          icon: 'info',
+          title: 'Já inscrito!',
+          text: 'Você já está inscrito neste curso.',
+          confirmButtonColor: '#8b5e3c',
+          confirmButtonText: 'OK',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro na inscrição',
+          text: error.message || 'Não foi possível realizar a inscrição. Tente novamente.',
+          confirmButtonColor: '#8b5e3c',
+          confirmButtonText: 'OK',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,7 +133,7 @@ export default function CadastroCurso() {
           }}
         >
           <h3 style={{ color: "#8b5e3c", marginBottom: "8px" }}>
-            {curso.nome}
+            {curso.titulo}
           </h3>
 
           <p>
@@ -85,6 +146,9 @@ export default function CadastroCurso() {
 
           <p>
             <strong>Duração:</strong> {curso.duracao}
+          </p>
+          <p>
+            <strong>Alunos inscritos:</strong> {curso.alunos || 0}
           </p>
         </div>
 
@@ -99,6 +163,8 @@ export default function CadastroCurso() {
             marginBottom: "15px",
             borderRadius: "10px",
             border: "1px solid #ddd",
+            color: '#000',
+            background: '#fff',
           }}
         />
 
@@ -113,6 +179,8 @@ export default function CadastroCurso() {
             marginBottom: "15px",
             borderRadius: "10px",
             border: "1px solid #ddd",
+            color: '#000',
+            background: '#fff',
           }}
         />
 
@@ -127,11 +195,14 @@ export default function CadastroCurso() {
             marginBottom: "20px",
             borderRadius: "10px",
             border: "1px solid #ddd",
+            color: '#000',
+            background: '#fff',
           }}
         />
 
         <button
           onClick={continuar}
+          disabled={loading}
           style={{
             width: "100%",
             padding: "14px",
@@ -141,56 +212,12 @@ export default function CadastroCurso() {
             color: "#fff",
             fontWeight: "bold",
             fontSize: "15px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
           }}
         >
-          Continuar para Pagamento
+          {loading ? 'Processando...' : 'Continuar para Pagamento'}
         </button>
-
-        {modalAberto && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                padding: "25px",
-                borderRadius: "12px",
-                textAlign: "center",
-                width: "300px",
-              }}
-            >
-             <h2 style={{ color: "#000", marginBottom: "10px", fontWeight: "700" }}> Atenção ⚠️
-              </h2>
-              <p>Preencha todos os campos.</p>
-
-              <button
-                onClick={() => setModalAberto(false)}
-                style={{
-                  marginTop: "15px",
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "8px",
-                  background: "#8b5e3c",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
