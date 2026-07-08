@@ -110,3 +110,102 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ============================================
+   RESPONSIVIDADE GLOBAL
+   ============================================ */
+
+/* Tablets e telas médias */
+@media (max-width: 1024px) {
+  :root {
+    font-size: 16px;
+  }
+  
+  .container {
+    padding: 0 20px;
+  }
+}
+
+/* Celulares grandes */
+@media (max-width: 768px) {
+  :root {
+    font-size: 15px;
+  }
+  
+  .container {
+    padding: 0 16px;
+  }
+  
+  /* Esconder em mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* Mostrar em mobile */
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Celulares pequenos */
+@media (max-width: 480px) {
+  :root {
+    font-size: 14px;
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  h1 {
+    font-size: 28px !important;
+  }
+  
+  h2 {
+    font-size: 18px !important;
+  }
+}
+
+/* ============================================
+   CLASSES RESPONSIVAS
+   ============================================ */
+
+/* Esconder em mobile */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Menu mobile - garantir que funciona */
+@media (max-width: 1024px) {
+  .nav-desktop {
+    display: none !important;
+  }
+  
+  .user-desktop {
+    display: none !important;
+  }
+  
+  .menu-mobile-btn {
+    display: block !important;
+  }
+  
+  .nav-mobile {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-mobile-btn {
+    display: none !important;
+  }
+  
+  .nav-mobile {
+    display: none !important;
+  }
+}

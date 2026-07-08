@@ -17,14 +17,11 @@ import {
   Image as ImageIcon,
   X,
   Trash2,
-  ZoomIn,
   Users,
   FileText,
   Activity,
-  Cross,
   Church,
-  BookOpen,
-  Clock
+  BookOpen
 } from 'lucide-react'
 
 export default function FeedGlobal() {
@@ -80,16 +77,15 @@ export default function FeedGlobal() {
     }
   }
   
-const carregarTotalUsuarios = async () => {
-  try {
-    const response = await userService.getTotalUsers()
-    setTotalUsuarios(response.total || response.count || response.length || 0)
-  } catch (error) {
-    console.error('Erro ao carregar total de usuários:', error)
-    // Fallback: tenta contar pelos posts ou mantém 0
-    setTotalUsuarios(0)
+  const carregarTotalUsuarios = async () => {
+    try {
+      const response = await userService.getTotalUsers()
+      setTotalUsuarios(response.total || response.count || response.length || 0)
+    } catch (error) {
+      console.error('Erro ao carregar total de usuários:', error)
+      setTotalUsuarios(0)
+    }
   }
-}
 
   const mostrarModalPersonalizado = (mensagem, tipo = 'success') => {
     setMensagemModal(mensagem)
@@ -456,9 +452,7 @@ const carregarTotalUsuarios = async () => {
     <div style={{ background: '#f5f2ea', minHeight: 'calc(100vh - 70px)', padding: '24px 16px' }}>
       <div style={{ maxWidth: '820px', margin: '0 auto' }}>
         
-        {/* ============================================ */}
         {/* BANNER - Feed Principal */}
-        {/* ============================================ */}
         <div style={{
           background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
           borderRadius: '20px',
@@ -469,7 +463,6 @@ const carregarTotalUsuarios = async () => {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Elemento decorativo */}
           <div style={{
             position: 'absolute',
             right: '-20px',
@@ -507,7 +500,6 @@ const carregarTotalUsuarios = async () => {
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Tag da comunidade */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -524,7 +516,6 @@ const carregarTotalUsuarios = async () => {
               </span>
             </div>
 
-            {/* Título principal - ALTERADO PARA "Feed Principal" */}
             <h1 style={{
               fontSize: '32px',
               fontWeight: '700',
@@ -535,7 +526,6 @@ const carregarTotalUsuarios = async () => {
               Feed Principal
             </h1>
 
-            {/* Subtítulo */}
             <p style={{
               fontSize: '17px',
               opacity: 0.95,
@@ -546,7 +536,6 @@ const carregarTotalUsuarios = async () => {
               Compartilhe mensagens, fotos, anúncios e atividades com todos os membros.
             </p>
 
-            {/* Versículo bíblico */}
             <div style={{
               marginTop: '14px',
               padding: '12px 18px',
@@ -575,7 +564,6 @@ const carregarTotalUsuarios = async () => {
               </p>
             </div>
 
-            {/* Estatísticas - ALTERADO "membros" para "usuários" */}
             <div style={{
               display: 'flex',
               gap: '28px',
@@ -610,29 +598,28 @@ const carregarTotalUsuarios = async () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
         }}>
           <textarea
-  value={novoPost}
-  onChange={(e) => setNovoPost(e.target.value)}
-  placeholder="Compartilhe uma mensagem de fé..."
-  rows="2"
-  style={{
-    width: '100%',
-    height: '70px',
-    resize: 'none',
-    padding: '14px',
-    borderRadius: '14px',
-    border: '1px solid #d9cfc0',
-    background: '#f1ebe2',
-    fontSize: '15px',
-    outline: 'none',
-    color: '#000000',
-    marginBottom: '16px',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif", // Fonte moderna
-    fontWeight: '400',
-    letterSpacing: '0.3px', // Pequeno espaçamento
-  }}
-/>
+            value={novoPost}
+            onChange={(e) => setNovoPost(e.target.value)}
+            placeholder="Compartilhe uma mensagem de fé..."
+            rows="2"
+            style={{
+              width: '100%',
+              height: '70px',
+              resize: 'none',
+              padding: '14px',
+              borderRadius: '14px',
+              border: '1px solid #d9cfc0',
+              background: '#f1ebe2',
+              fontSize: '15px',
+              outline: 'none',
+              color: '#000000',
+              marginBottom: '16px',
+              fontFamily: "'Inter', 'Segoe UI', sans-serif",
+              fontWeight: '400',
+              letterSpacing: '0.3px',
+            }}
+          />
 
-          {/* Pré-visualização das imagens */}
           {imagensSelecionadas.length > 0 && (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
               {imagensSelecionadas.map((item, index) => (
@@ -889,7 +876,7 @@ const carregarTotalUsuarios = async () => {
                 </p>
               )}
 
-              {/* IMAGENS */}
+              {/* IMAGENS - Responsivo */}
               {post.imagens && post.imagens.length > 0 && (
                 <div style={{
                   display: 'grid',
@@ -947,6 +934,7 @@ const carregarTotalUsuarios = async () => {
                 </div>
               )}
 
+              {/* 🔥 LINHA REMOVIDA - agora sem borda preta */}
               <hr style={{ border: 'none', borderTop: '1px solid #e7dfd4', marginBottom: '18px' }} />
 
               {/* AÇÕES */}

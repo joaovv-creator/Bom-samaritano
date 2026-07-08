@@ -27,12 +27,7 @@ export default function Cursos() {
       nivel: "Iniciante ao Avançado",
       cor: "linear-gradient(135deg, #9b6b4f 0%, #8b5e3c 100%)",
       icone: <Music size={30} color="white" />,
-      topicos: [
-        "Teoria Musical",
-        "Técnica Vocal",
-        "Liderança de Louvor",
-        "Instrumentos",
-      ],
+      topicos: ["Teoria Musical", "Técnica Vocal", "Liderança de Louvor", "Instrumentos"],
     },
     {
       id: 2,
@@ -44,12 +39,7 @@ export default function Cursos() {
       nivel: "Básico",
       cor: "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)",
       icone: <Hand size={30} color="white" />,
-      topicos: [
-        "Alfabeto",
-        "Vocabulário Religioso",
-        "Interpretação de Louvores",
-        "Prática",
-      ],
+      topicos: ["Alfabeto", "Vocabulário Religioso", "Interpretação de Louvores", "Prática"],
     },
     {
       id: 3,
@@ -61,12 +51,7 @@ export default function Cursos() {
       nivel: "Todos os níveis",
       cor: "linear-gradient(135deg, #ff6a00 0%, #ff4b2b 100%)",
       icone: <Mic size={30} color="white" />,
-      topicos: [
-        "Dicção",
-        "Postura",
-        "Pregação",
-        "Comunicação Eficaz",
-      ],
+      topicos: ["Dicção", "Postura", "Pregação", "Comunicação Eficaz"],
     },
     {
       id: 4,
@@ -78,46 +63,23 @@ export default function Cursos() {
       nivel: "Intermediário",
       cor: "linear-gradient(135deg, #22c55e 0%, #10b981 100%)",
       icone: <Music size={30} color="white" />,
-      topicos: [
-        "Técnicas de Regência",
-        "Arranjos Vocais",
-        "Ensaios",
-        "Performance",
-      ],
+      topicos: ["Técnicas de Regência", "Arranjos Vocais", "Ensaios", "Performance"],
     },
   ];
 
   const handleInscrever = (curso) => {
     const { icone, ...cursoSemIcone } = curso;
-
-    navigate("/cadastro-curso", {
-      state: {
-        curso: cursoSemIcone,
-      },
-    });
+    navigate("/cadastro-curso", { state: { curso: cursoSemIcone } });
   };
 
-  // Total de alunos e cursos
   const totalAlunos = cursos.reduce((acc, curso) => acc + curso.alunos, 0);
   const totalCursos = cursos.length;
 
   return (
-    <div
-      style={{
-        background: "#f5f2ea",
-        minHeight: "100vh",
-        padding: "40px 20px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1150px",
-          margin: "0 auto",
-        }}
-      >
-        {/* ============================================ */}
-        {/* BANNER - CURSOS (mesmo estilo das outras páginas) */}
-        {/* ============================================ */}
+    <div style={{ background: "#f5f2ea", minHeight: "100vh", padding: "40px 20px" }}>
+      <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
+        
+        {/* BANNER */}
         <div style={{
           background: 'linear-gradient(135deg, #8b5e3c, #b57a4b)',
           borderRadius: '20px',
@@ -128,7 +90,6 @@ export default function Cursos() {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Elemento decorativo */}
           <div style={{
             position: 'absolute',
             right: '-20px',
@@ -166,7 +127,6 @@ export default function Cursos() {
           }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Tag dos cursos */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -183,7 +143,6 @@ export default function Cursos() {
               </span>
             </div>
 
-            {/* Título principal */}
             <h1 style={{
               fontSize: '32px',
               fontWeight: '700',
@@ -194,7 +153,6 @@ export default function Cursos() {
               Cursos Cristãos
             </h1>
 
-            {/* Subtítulo */}
             <p style={{
               fontSize: '17px',
               opacity: 0.95,
@@ -205,7 +163,6 @@ export default function Cursos() {
               Aprenda e desenvolva seus talentos para servir ao Reino
             </p>
 
-            {/* Versículo bíblico */}
             <div style={{
               marginTop: '14px',
               padding: '12px 18px',
@@ -234,7 +191,6 @@ export default function Cursos() {
               </p>
             </div>
 
-            {/* Estatísticas */}
             <div style={{
               display: 'flex',
               gap: '28px',
@@ -243,35 +199,26 @@ export default function Cursos() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <GraduationCap size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  {totalCursos} cursos
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{totalCursos} cursos</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  {totalAlunos} alunos
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{totalAlunos} alunos</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Award size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  Certificado reconhecido
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>Certificado reconhecido</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* GRID DE CURSOS */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "20px",
-          }}
-        >
+        {/* 🔥 GRID DE CURSOS - RESPONSIVO */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '20px',
+        }}>
           {cursos.map((curso) => (
             <div
               key={curso.id}
@@ -295,151 +242,83 @@ export default function Cursos() {
                 e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              {/* TOPO */}
-              <div
-                style={{
-                  background: curso.cor,
-                  height: "90px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div style={{
+                background: curso.cor,
+                height: "90px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
                 {curso.icone}
               </div>
 
-              {/* CONTEÚDO */}
-              <div
-                style={{
-                  padding: "18px",
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+              <div style={{
+                padding: "18px",
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}>
                 <div>
-                  <h2
-                    style={{
-                      fontSize: "18px",
-                      color: "#0f172a",
-                      marginBottom: "6px",
-                      fontWeight: "700",
-                      lineHeight: "1.3",
-                    }}
-                  >
+                  <h2 style={{
+                    fontSize: "18px",
+                    color: "#0f172a",
+                    marginBottom: "6px",
+                    fontWeight: "700",
+                    lineHeight: "1.3",
+                  }}>
                     {curso.nome}
                   </h2>
 
-                  <p
-                    style={{
-                      color: "#64748b",
-                      fontSize: "13px",
-                      marginBottom: "18px",
-                    }}
-                  >
+                  <p style={{
+                    color: "#64748b",
+                    fontSize: "13px",
+                    marginBottom: "18px",
+                  }}>
                     Professor {curso.professor}
                   </p>
 
-                  {/* INFO */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "18px",
-                      textAlign: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <Users
-                        size={18}
-                        color="#94a3b8"
-                        style={{ marginBottom: "5px" }}
-                      />
-
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#475569",
-                        }}
-                      >
-                        {curso.alunos} alunos
-                      </p>
+                  {/* INFO - Responsivo */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '8px',
+                    marginBottom: '18px',
+                    textAlign: 'center',
+                  }}>
+                    <div>
+                      <Users size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.alunos} alunos</p>
                     </div>
-
-                    <div style={{ flex: 1 }}>
-                      <Clock3
-                        size={18}
-                        color="#94a3b8"
-                        style={{ marginBottom: "5px" }}
-                      />
-
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#475569",
-                        }}
-                      >
-                        {curso.duracao}
-                      </p>
+                    <div>
+                      <Clock3 size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.duracao}</p>
                     </div>
-
-                    <div style={{ flex: 1 }}>
-                      <BookOpen
-                        size={18}
-                        color="#94a3b8"
-                        style={{ marginBottom: "5px" }}
-                      />
-
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#475569",
-                        }}
-                      >
-                        {curso.nivel}
-                      </p>
+                    <div>
+                      <BookOpen size={18} color="#94a3b8" style={{ marginBottom: '5px' }} />
+                      <p style={{ fontSize: '12px', color: '#475569' }}>{curso.nivel}</p>
                     </div>
                   </div>
 
-                  <hr
-                    style={{
-                      border: "none",
-                      borderTop: "1px solid #e5e7eb",
-                      marginBottom: "16px",
-                    }}
-                  />
+                  <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', marginBottom: '16px' }} />
 
-                  {/* TÓPICOS */}
-                  <h4
-                    style={{
-                      marginBottom: "10px",
-                      color: "#0f172a",
-                      fontSize: "14px",
-                    }}
-                  >
+                  <h4 style={{ marginBottom: '10px', color: '#0f172a', fontSize: '14px' }}>
                     O que você vai aprender:
                   </h4>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "6px",
-                      marginBottom: "18px",
-                    }}
-                  >
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    marginBottom: '18px',
+                  }}>
                     {curso.topicos.map((topico, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: "#f1e6d5",
-                          padding: "5px 10px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                          color: "#8b5e3c",
-                        }}
-                      >
+                      <span key={idx} style={{
+                        background: "#f1e6d5",
+                        padding: "5px 10px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        color: "#8b5e3c",
+                      }}>
                         {topico}
                       </span>
                     ))}
@@ -447,32 +326,16 @@ export default function Cursos() {
                 </div>
 
                 {/* RODAPÉ */}
-                <div
-                  style={{
-                    marginTop: "auto",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
+                <div style={{
+                  marginTop: "auto",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "10px",
+                }}>
                   <div>
-                    <p
-                      style={{
-                        color: "#64748b",
-                        fontSize: "11px",
-                      }}
-                    >
-                      A partir de
-                    </p>
-
-                    <p
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: "700",
-                        color: "#8b5e3c",
-                      }}
-                    >
+                    <p style={{ color: "#64748b", fontSize: "11px" }}>A partir de</p>
+                    <p style={{ fontSize: "16px", fontWeight: "700", color: "#8b5e3c" }}>
                       R$ {curso.preco}.00
                     </p>
                   </div>
@@ -502,49 +365,28 @@ export default function Cursos() {
         </div>
 
         {/* BENEFÍCIOS */}
-        <div
-          style={{
-            marginTop: "45px",
-            background: "#9b6b4f",
-            borderRadius: "16px",
-            padding: "32px",
-            color: "white",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "28px",
-              marginBottom: "22px",
-              fontWeight: "700",
-            }}
-          >
+        <div style={{
+          marginTop: "45px",
+          background: "#9b6b4f",
+          borderRadius: "16px",
+          padding: "32px",
+          color: "white",
+        }}>
+          <h3 style={{ fontSize: "28px", marginBottom: "22px", fontWeight: "700" }}>
             Por que fazer nossos cursos?
           </h3>
 
-          <ul
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-              fontSize: "16px",
-              paddingLeft: "22px",
-            }}
-          >
-            <li>
-              Aprenda com profissionais experientes no ministério
-            </li>
-
-            <li>
-              Certificado reconhecido ao concluir o curso
-            </li>
-
-            <li>
-              Estude no seu próprio ritmo, quando e onde quiser
-            </li>
-
-            <li>
-              Comunidade de alunos para networking e troca de experiências
-            </li>
+          <ul style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "14px",
+            fontSize: "16px",
+            paddingLeft: "22px",
+          }}>
+            <li>Aprenda com profissionais experientes no ministério</li>
+            <li>Certificado reconhecido ao concluir o curso</li>
+            <li>Estude no seu próprio ritmo, quando e onde quiser</li>
+            <li>Comunidade de alunos para networking e troca de experiências</li>
           </ul>
         </div>
       </div>

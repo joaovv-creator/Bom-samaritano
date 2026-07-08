@@ -397,55 +397,51 @@ export default function Comunidade() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  {totalMembros} membros
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{totalMembros} membros</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Group size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  {totalComunidades} comunidades
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{totalComunidades} comunidades</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Activity size={18} style={{ opacity: 0.85 }} />
-                <span style={{ fontSize: '14px', opacity: 0.85 }}>
-                  {comunidadesUsuario.length} participando
-                </span>
+                <span style={{ fontSize: '14px', opacity: 0.85 }}>{comunidadesUsuario.length} participando</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ABAS */}
+        {/* ABAS - Responsivo */}
         <div style={{
           display: 'flex',
-          gap: '30px',
+          gap: '20px',
           borderBottom: '1px solid #d6d3d1',
           marginBottom: '30px',
           background: 'white',
-          padding: '0 20px',
+          padding: '0 16px',
           borderRadius: '18px 18px 0 0',
+          overflowX: 'auto',
         }}>
           <button
             onClick={() => setActiveTab("globais")}
             style={{
               background: 'none',
               border: 'none',
-              padding: '18px 0 14px 0',
+              padding: '16px 0 14px 0',
               cursor: 'pointer',
               color: activeTab === "globais" ? '#7c4a2d' : '#64748b',
               fontWeight: '600',
               borderBottom: activeTab === "globais" ? '3px solid #7c4a2d' : '3px solid transparent',
-              fontSize: '16px',
+              fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
             }}
           >
-            <Globe size={18} />
-            Comunidades Globais ({comunidadesGlobais.length})
+            <Globe size={16} />
+            Globais ({comunidadesGlobais.length})
           </button>
 
           <button
@@ -453,24 +449,25 @@ export default function Comunidade() {
             style={{
               background: 'none',
               border: 'none',
-              padding: '18px 0 14px 0',
+              padding: '16px 0 14px 0',
               cursor: 'pointer',
               color: activeTab === "privadas" ? '#7c4a2d' : '#64748b',
               fontWeight: '600',
               borderBottom: activeTab === "privadas" ? '3px solid #7c4a2d' : '3px solid transparent',
-              fontSize: '16px',
+              fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
             }}
           >
-            <Lock size={18} />
-            Comunidades Privadas ({comunidadesPrivadas.length})
+            <Lock size={16} />
+            Privadas ({comunidadesPrivadas.length})
           </button>
         </div>
 
-        {/* BUSCA */}
+        {/* BUSCA - Responsivo */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -478,8 +475,8 @@ export default function Comunidade() {
         }}>
           <div style={{
             position: 'relative',
-            width: '500px',
-            maxWidth: '100%',
+            width: '100%',
+            maxWidth: '500px',
           }}>
             <Search size={20} style={{
               position: 'absolute',
@@ -516,9 +513,9 @@ export default function Comunidade() {
           </div>
         </div>
 
-        {/* CARDS */}
+        {/* CARDS - Grid Responsivo */}
         {comunidadesFiltradas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '18px' }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px', background: 'white', borderRadius: '18px' }}>
             <AlertCircle size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
             <p style={{ color: '#64748b', fontSize: '18px' }}>
               {searchTerm ? 'Nenhuma comunidade encontrada com esse termo' : 'Nenhuma comunidade disponível'}
@@ -549,9 +546,8 @@ export default function Comunidade() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 320px))',
-            justifyContent: 'center',
-            gap: '24px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px',
           }}>
             {comunidadesFiltradas.map((com) => {
               const isParticipando = comunidadesUsuario.includes(com.id);
@@ -564,7 +560,7 @@ export default function Comunidade() {
                   style={{
                     background: '#fff',
                     borderRadius: '18px',
-                    padding: '24px',
+                    padding: '20px',
                     border: '1px solid #e7e5e4',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                     transition: 'box-shadow 0.3s, transform 0.3s',
@@ -582,13 +578,13 @@ export default function Comunidade() {
                   {isCriador && (
                     <div style={{
                       position: 'absolute',
-                      top: '12px',
-                      right: '12px',
+                      top: '10px',
+                      right: '10px',
                       background: '#8b5e3c',
                       color: 'white',
-                      padding: '4px 12px',
+                      padding: '3px 10px',
                       borderRadius: '100px',
-                      fontSize: '11px',
+                      fontSize: '10px',
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
@@ -603,13 +599,13 @@ export default function Comunidade() {
                       onClick={() => handleDeletarComunidade(com)}
                       style={{
                         position: 'absolute',
-                        bottom: '12px',
-                        right: '12px',
+                        bottom: '10px',
+                        right: '10px',
                         background: 'transparent',
                         border: 'none',
                         color: '#dc2626',
                         cursor: 'pointer',
-                        padding: '8px',
+                        padding: '6px',
                         borderRadius: '8px',
                         transition: 'all 0.2s',
                       }}
@@ -617,28 +613,28 @@ export default function Comunidade() {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       title="Deletar comunidade"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
                   )}
 
                   <div style={{
-                    width: '58px',
-                    height: '58px',
+                    width: '50px',
+                    height: '50px',
                     background: com.cor || '#8b5e3c',
-                    borderRadius: '14px',
+                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    marginBottom: '18px',
+                    marginBottom: '14px',
                   }}>
-                    <IconComponent size={28} />
+                    <IconComponent size={24} />
                   </div>
 
                   <h2 style={{
-                    fontSize: '22px',
+                    fontSize: '18px',
                     color: '#0f172a',
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                     fontWeight: '600',
                   }}>
                     {com.nome}
@@ -649,10 +645,11 @@ export default function Comunidade() {
                     alignItems: 'center',
                     gap: '8px',
                     color: '#64748b',
-                    marginBottom: '14px',
-                    fontSize: '14px',
+                    marginBottom: '10px',
+                    fontSize: '13px',
+                    flexWrap: 'wrap',
                   }}>
-                    <Users size={16} />
+                    <Users size={14} />
                     <span>{com.membros || 0} membros</span>
                     {com.whatsapp && (
                       <>
@@ -665,8 +662,8 @@ export default function Comunidade() {
                   <p style={{
                     color: '#475569',
                     lineHeight: '1.6',
-                    marginBottom: '22px',
-                    fontSize: '15px',
+                    marginBottom: '16px',
+                    fontSize: '14px',
                   }}>
                     {com.descricao}
                   </p>
@@ -676,32 +673,32 @@ export default function Comunidade() {
                     disabled={participando[com.id]}
                     style={{
                       width: '100%',
-                      padding: '14px',
+                      padding: '12px',
                       background: isParticipando ? '#16a34a' : '#7c4a2d',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '12px',
+                      borderRadius: '10px',
                       cursor: participando[com.id] ? 'not-allowed' : 'pointer',
                       fontWeight: '600',
-                      fontSize: '15px',
+                      fontSize: '14px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px',
+                      gap: '6px',
                       transition: 'all 0.3s',
                       opacity: participando[com.id] ? 0.7 : 1,
                     }}
                   >
                     {participando[com.id] ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={16} className="animate-spin" />
                     ) : isParticipando ? (
                       <>
-                        <CheckCircle size={18} />
+                        <CheckCircle size={16} />
                         Participando
                       </>
                     ) : (
                       <>
-                        <Plus size={18} />
+                        <Plus size={16} />
                         Participar
                       </>
                     )}
