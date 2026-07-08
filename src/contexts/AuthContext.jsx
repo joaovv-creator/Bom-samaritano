@@ -11,9 +11,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     console.log('🔄 AuthProvider: Iniciando...')
 
-    // Verificar sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('📋 Sessão:', session)
       if (session?.user) {
         setUser(session.user)
         carregarPerfil(session.user)
@@ -22,17 +20,12 @@ export function AuthProvider({ children }) {
       }
     })
 
-    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state change:', event)
-        
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('👤 Usuário logou:', session.user.id)
           setUser(session.user)
           await carregarPerfil(session.user)
         } else if (event === 'SIGNED_OUT') {
-          console.log('👤 Usuário deslogou')
           setUser(null)
         }
         setLoading(false)
@@ -46,8 +39,6 @@ export function AuthProvider({ children }) {
 
   async function carregarPerfil(user) {
     try {
-      console.log('📝 Carregando perfil para:', user.id)
-      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -55,14 +46,16 @@ export function AuthProvider({ children }) {
         .single()
 
       if (error && error.code === 'PGRST116') {
-        console.log('📝 Perfil não encontrado. Criando...')
         await criarPerfil(user)
       } else if (error) {
         console.error('❌ Erro ao carregar perfil:', error)
       } else {
-        console.log('✅ Perfil carregado:', data)
-        // Adicionar dados do perfil ao usuário
-        setUser({ ...user, ...data })
+        // 🔥 Adicionar avatar_url ao objeto do usuário
+        setUser({ 
+          ...user, 
+          ...data,
+          avatar_url: data?.avatar_url || null 
+        })
       }
     } catch (error) {
       console.error('❌ Erro ao carregar perfil:', error)
@@ -90,108 +83,63 @@ export function AuthProvider({ children }) {
         return
       }
 
-      console.log('✅ Perfil criado:', data)
       setUser({ ...user, ...data })
     } catch (error) {
       console.error('❌ Erro ao criar perfil:', error)
     }
   }
 
-  // 🔥 FUNÇÃO DE LOGIN - CORRETA
+  // 🔥 FUNÇÃO PARA ATUALIZAR O AVATAR
+  async function atualizarAvatar(userId, avatarUrl) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', userId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Atualizar o estado do usuário com a nova URL
+      setUser(prev => ({ 
+        ...prev, 
+        avatar_url: avatarUrl,
+        ...data 
+      }))
+
+      return data
+    } catch (error) {
+      console.error('❌ Erro ao atualizar avatar:', error)
+      throw error
+    }
+  }
+
   const signIn = async (email, password) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) throw error
-      
-      // Recarregar perfil após login
-      if (data?.user) {
-        await carregarPerfil(data.user)
-      }
-      
-      return data
-    } catch (error) {
-      console.error('❌ Erro no login:', error)
-      throw error
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) throw error
+    return data
   }
 
-  // 🔥 FUNÇÃO DE CADASTRO - CORRIGIDA
   const signUp = async (email, password, nome) => {
-    try {
-      // 1. Criar usuário no auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: nome, // Salva o nome no metadata do usuário
-          },
-        },
-      })
-
-      if (error) throw error
-
-      // 2. Se o usuário foi criado, criar o perfil na tabela profiles
-      if (data?.user) {
-        // Aguarda um pouco para garantir que o usuário foi criado no auth
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // Tenta criar o perfil
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              name: nome,
-              role: 'membro',
-              created_at: new Date().toISOString(),
-            },
-          ])
-
-        if (profileError) {
-          console.error('❌ Erro ao criar perfil:', profileError)
-          
-          // Se o perfil já existe, tenta atualizar
-          if (profileError.code === '23505') { // Código de violação de chave única
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({
-                name: nome,
-                email: email,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', data.user.id)
-
-            if (updateError) {
-              console.error('❌ Erro ao atualizar perfil:', updateError)
-            }
-          }
-        } else {
-          console.log('✅ Perfil criado com sucesso!')
-        }
-      }
-
-      return data
-    } catch (error) {
-      console.error('❌ Erro no cadastro:', error)
-      throw error
-    }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name: nome },
+      },
+    })
+    if (error) throw error
+    return data
   }
 
-  // 🔥 FUNÇÃO DE LOGOUT
   const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      setUser(null)
-    } catch (error) {
-      console.error('❌ Erro ao sair:', error)
-      throw error
-    }
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    setUser(null)
   }
 
   const value = {
@@ -200,6 +148,7 @@ export function AuthProvider({ children }) {
     signIn,
     signUp,
     signOut,
+    atualizarAvatar, // 🔥 Exportar a função
   }
 
   return (
@@ -210,9 +159,5 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+  return useContext(AuthContext)
 }
