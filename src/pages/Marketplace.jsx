@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -8,17 +8,25 @@ import {
   Plus,
   Minus,
   Trash2,
-  Church,
   BookOpen,
   Activity,
   Users,
-  Sparkles
+  Sparkles,
+  Loader2,
+  PlusCircle,
+  Image as ImageIcon
 } from 'lucide-react'
 
 import { useCart } from '../contexts/CartContext'
+import { useAuth } from '../contexts/AuthContext'
+import { adminService } from '../services/adminService'
+import { AdminModal } from '../components/AdminModal'
+import Swal from 'sweetalert2'
 import Navbar from '../components/common/Navbar'
 
 function Marketplace() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const {
     carrinho,
     adicionarAoCarrinho,
@@ -28,84 +36,170 @@ function Marketplace() {
     total,
   } = useCart()
 
-  const navigate = useNavigate()
-
   const [abrirCarrinho, setAbrirCarrinho] = useState(false)
   const [categoria, setCategoria] = useState('todos')
   const [busca, setBusca] = useState('')
-  const [pagamento, setPagamento] = useState('pix')
+  const [produtos, setProdutos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [modalCriarOpen, setModalCriarOpen] = useState(false)
+  const [deletando, setDeletando] = useState({})
+  const [carregandoAdmin, setCarregandoAdmin] = useState(true)
 
-  const produtos = [
-    {
-      id: 1,
-      nome: 'Bíblia Sagrada NVI',
-      preco: 89.9,
-      avaliacao: 4.9,
-      avaliacoes: 234,
-      categoria: 'biblias',
-      descricao: 'Nova Versão Internacional com capa luxo',
-      imagem: 'https://media.istockphoto.com/id/1759751957/pt/foto/biblia-sagrada.webp?a=1&b=1&s=612x612&w=0&k=20&c=31buEX22q6SVqvHE10-0uNI8PiseR_aEr_YrQmOAtOQ=',
-    },
-    {
-      id: 2,
-      nome: 'Bíblia de Estudo',
-      preco: 149.9,
-      avaliacao: 5.0,
-      avaliacoes: 187,
-      categoria: 'biblias',
-      descricao: 'Com comentários e mapas ilustrados',
-      imagem: 'https://m.media-amazon.com/images/I/81+e5daLKvL._AC_UF1000,1000_QL80_.jpg',
-    },
-    {
-      id: 3,
-      nome: 'O Peregrino',
-      preco: 45.9,
-      avaliacao: 5.0,
-      avaliacoes: 187,
-      categoria: 'livros',
-      descricao: 'John Bunyan - Clássico da literatura cristã',
-      imagem: 'https://images.tcdn.com.br/img/img_prod/1199365/livro_o_peregrino_john_bunyan_capa_dura_871_1_3b00167d9bc22d624b7b38e2778486f7.jpg',
-    },
-    {
-      id: 4,
-      nome: 'Em Seus Passos',
-      preco: 35.9,
-      avaliacao: 5.0,
-      avaliacoes: 187,
-      categoria: 'livros',
-      descricao: 'Charles Sheldon - O que Jesus faria?',
-      imagem: 'https://plenitudedistribuidora.com.br/cdn/shop/files/282252-1.jpg?v=1772137658',
-    },
-    {
-      id: 5,
-      nome: 'Bíblia Infantil',
-      preco: 59.9,
-      avaliacao: 5.0,
-      avaliacoes: 187,
-      categoria: 'biblias',
-      descricao: 'Histórias ilustradas para crianças',
-      imagem: 'https://livrariascuritiba.vteximg.com.br/arquivos/ids/1868407-525-525/LV450888.jpg?v=638682192530600000',
-    },
-    {
-      id: 6,
-      nome: 'Cristianismo Puro e Simples',
-      preco: 42.9,
-      avaliacao: 5.0,
-      avaliacoes: 187,
-      categoria: 'livros',
-      descricao: 'C.S. Lewis - Obra-prima da apologética',
-      imagem: 'https://acdn-us.mitiendanube.com/stores/001/677/619/products/cristianismo-puro-e-simples-c-s-lewis-editora-thomas-nelson-min1-b84493540daa6a223b16360545390730-1024-1024.webp',
-    },
-  ]
+  useEffect(() => {
+    carregarProdutos()
+    verificarAdmin()
+  }, [])
+
+  const verificarAdmin = async () => {
+    try {
+      setCarregandoAdmin(true)
+      if (user) {
+        const admin = await adminService.isAdmin(user.id)
+        setIsAdmin(admin)
+      } else {
+        setIsAdmin(false)
+      }
+    } catch (error) {
+      console.error('Erro ao verificar admin:', error)
+      setIsAdmin(false)
+    } finally {
+      setCarregandoAdmin(false)
+    }
+  }
+
+  const carregarProdutos = async () => {
+    try {
+      setLoading(true)
+      const dados = await adminService.getProdutos()
+      setProdutos(dados || [])
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: 'Não foi possível carregar os produtos.',
+        confirmButtonColor: '#8b5e3c',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCriarProduto = async (dados) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem criar produtos.',
+        confirmButtonColor: '#8b5e3c',
+      })
+      return
+    }
+
+    try {
+      const novoProduto = await adminService.criarProduto(dados)
+      setProdutos(prev => [...prev, novoProduto])
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Produto criado!',
+        text: `"${novoProduto.nome}" foi adicionado com sucesso.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      })
+    } catch (error) {
+      console.error('Erro ao criar produto:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível criar o produto.',
+        confirmButtonColor: '#8b5e3c',
+      })
+      throw error
+    }
+  }
+
+  const handleDeletarProduto = async (id, nome) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem deletar produtos.',
+        confirmButtonColor: '#8b5e3c',
+      })
+      return
+    }
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: `Você está prestes a deletar "${nome}". Esta ação não pode ser desfeita!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) return
+
+    try {
+      setDeletando(prev => ({ ...prev, [id]: true }))
+      await adminService.deletarProduto(id)
+      setProdutos(prev => prev.filter(p => p.id !== id))
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Deletado!',
+        text: `"${nome}" foi removido.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      })
+    } catch (error) {
+      console.error('Erro ao deletar:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível deletar o produto.',
+        confirmButtonColor: '#8b5e3c',
+      })
+    } finally {
+      setDeletando(prev => ({ ...prev, [id]: false }))
+    }
+  }
 
   const produtosFiltrados = produtos.filter((produto) => {
     const matchCategoria = categoria === 'todos' || produto.categoria === categoria
-    const matchBusca = produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
-                       produto.descricao.toLowerCase().includes(busca.toLowerCase())
+    const matchBusca = produto.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+                       produto.descricao?.toLowerCase().includes(busca.toLowerCase())
     return matchCategoria && matchBusca
   })
 
   const totalProdutos = produtos.length
+
+  // 🔥 CAMPOS DO FORMULÁRIO - SEM AVALIAÇÃO
+  const camposProduto = [
+    { name: 'nome', label: 'Nome', type: 'text', placeholder: 'Ex: Bíblia Sagrada', required: true },
+    { name: 'preco', label: 'Preço (R$)', type: 'number', placeholder: '89.90', required: true, step: '0.01', min: 0 },
+    { name: 'categoria', label: 'Categoria', type: 'select', options: [
+      { value: 'biblias', label: 'Bíblias' },
+      { value: 'livros', label: 'Livros' },
+    ], required: true },
+    { name: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Breve descrição do produto', required: true },
+    { name: 'imagem', label: 'URL da Imagem', type: 'text', placeholder: 'https://...', required: true },
+  ]
+
+  if (loading || carregandoAdmin) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f2ea' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#8b5e3c' }} />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -127,7 +221,7 @@ function Marketplace() {
             borderRadius: '20px',
             padding: '40px 36px',
             color: 'white',
-            marginBottom: '28px',
+            marginBottom: '16px',
             boxShadow: '0 12px 40px rgba(139, 94, 60, 0.25)',
             position: 'relative',
             overflow: 'hidden',
@@ -255,6 +349,45 @@ function Marketplace() {
             </div>
           </div>
 
+          {/* 🔥 BOTÃO ADMIN - FORA DO BANNER, EM BAIXO */}
+          {isAdmin && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginBottom: '16px',
+            }}>
+              <button
+                onClick={() => setModalCriarOpen(true)}
+                style={{
+                  background: '#8b5e3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '10px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 12px rgba(139, 94, 60, 0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#6b3f2a'
+                  e.currentTarget.style.transform = 'scale(1.02)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#8b5e3c'
+                  e.currentTarget.style.transform = 'scale(1)'
+                }}
+              >
+                <PlusCircle size={18} />
+                Adicionar Produto
+              </button>
+            </div>
+          )}
+
           {/* HEADER - BUSCA E CARRINHO */}
           <div style={{
             display: 'flex',
@@ -304,41 +437,41 @@ function Marketplace() {
               />
             </div>
 
+            {/* 🔥 ÍCONE DO CARRINHO - SEM TEXTO */}
             <button
               onClick={() => setAbrirCarrinho(true)}
               style={{
                 border: 'none',
                 background: '#8B5A2B',
                 color: '#fff',
-                padding: '12px 16px',
+                padding: '12px',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontWeight: '600',
-                fontSize: '14px',
                 transition: 'all 0.3s',
                 flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '48px',
+                height: '48px',
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#7b4b2a'}
               onMouseLeave={(e) => e.currentTarget.style.background = '#8B5A2B'}
             >
-              <ShoppingCart size={20} />
-              <span className="hide-mobile">Carrinho</span>
+              <ShoppingCart size={22} />
 
               {carrinho.length > 0 && (
                 <span style={{
                   position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
+                  top: '-6px',
+                  right: '-6px',
                   background: '#dc2626',
                   color: '#fff',
-                  width: '24px',
-                  height: '24px',
+                  width: '22px',
+                  height: '22px',
                   borderRadius: '50%',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -350,7 +483,7 @@ function Marketplace() {
             </button>
           </div>
 
-          {/* CATEGORIAS - Responsivo */}
+          {/* CATEGORIAS */}
           <div style={{
             display: 'flex',
             gap: '10px',
@@ -379,13 +512,35 @@ function Marketplace() {
             ))}
           </div>
 
-          {/* PRODUTOS - Grid Responsivo */}
+          {/* PRODUTOS */}
           {produtosFiltrados.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '18px' }}>
               <Search size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
               <p style={{ color: '#64748b', fontSize: '18px' }}>
-                Nenhum produto encontrado com esse termo
+                {busca ? 'Nenhum produto encontrado com esse termo' : 'Nenhum produto disponível'}
               </p>
+              {isAdmin && (
+                <button
+                  onClick={() => setModalCriarOpen(true)}
+                  style={{
+                    marginTop: '16px',
+                    padding: '12px 24px',
+                    background: '#8b5e3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '15px',
+                    transition: 'all 0.3s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#6b3f2a'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#8b5e3c'}
+                >
+                  <PlusCircle size={18} style={{ marginRight: '8px' }} />
+                  Adicionar primeiro produto
+                </button>
+              )}
             </div>
           ) : (
             <div style={{
@@ -404,6 +559,7 @@ function Marketplace() {
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'box-shadow 0.3s, transform 0.3s',
+                    position: 'relative',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08)'
@@ -414,6 +570,50 @@ function Marketplace() {
                     e.currentTarget.style.transform = 'translateY(0)'
                   }}
                 >
+                  {/* 🔥 BOTÃO DELETAR - APENAS ADMIN */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeletarProduto(prod.id, prod.nome)
+                      }}
+                      disabled={deletando[prod.id]}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: 'rgba(220, 38, 38, 0.9)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: deletando[prod.id] ? 'not-allowed' : 'pointer',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        transition: 'all 0.2s',
+                        zIndex: 10,
+                        width: '28px',
+                        height: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: deletando[prod.id] ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#dc2626'
+                        e.currentTarget.style.transform = 'scale(1.1)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(220, 38, 38, 0.9)'
+                        e.currentTarget.style.transform = 'scale(1)'
+                      }}
+                    >
+                      {deletando[prod.id] ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <X size={16} />
+                      )}
+                    </button>
+                  )}
+
                   <img
                     src={prod.imagem}
                     alt={prod.nome}
@@ -421,6 +621,9 @@ function Marketplace() {
                       width: '100%',
                       height: '200px',
                       objectFit: 'cover',
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/220x200/8b5e3c/ffffff?text=Imagem+Indispon%C3%ADvel'
                     }}
                   />
 
@@ -434,6 +637,7 @@ function Marketplace() {
                       margin: 0,
                       color: '#1f2937',
                       fontSize: '16px',
+                      fontWeight: '600',
                     }}>
                       {prod.nome}
                     </h2>
@@ -455,8 +659,8 @@ function Marketplace() {
                       marginTop: '10px',
                     }}>
                       <Star size={14} color="#facc15" fill="#facc15" />
-                      <span style={{ color: '#1f2937', fontWeight: '600' }}>{prod.avaliacao}</span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>({prod.avaliacoes})</span>
+                      <span style={{ color: '#1f2937', fontWeight: '600' }}>{prod.avaliacao || 0}</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>({prod.avaliacoes || 0})</span>
                     </div>
 
                     <h3 style={{
@@ -465,7 +669,7 @@ function Marketplace() {
                       fontSize: '20px',
                       fontWeight: '700',
                     }}>
-                      R$ {prod.preco.toFixed(2)}
+                      R$ {prod.preco?.toFixed(2) || '0.00'}
                     </h3>
 
                     <button
@@ -511,7 +715,7 @@ function Marketplace() {
         />
       )}
 
-      {/* CARRINHO LATERAL - Responsivo */}
+      {/* CARRINHO LATERAL */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -586,7 +790,7 @@ function Marketplace() {
                     {item.nome}
                   </p>
                   <p style={{ color: '#8B5A2B', fontWeight: '700', margin: '5px 0' }}>
-                    R$ {item.preco.toFixed(2)}
+                    R$ {item.preco?.toFixed(2) || '0.00'}
                   </p>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -666,7 +870,7 @@ function Marketplace() {
             justifyContent: 'space-between',
           }}>
             <span>Total:</span>
-            <span style={{ color: '#8B5A2B' }}>R$ {total.toFixed(2)}</span>
+            <span style={{ color: '#8B5A2B' }}>R$ {total?.toFixed(2) || '0.00'}</span>
           </h3>
 
           <button
@@ -691,6 +895,34 @@ function Marketplace() {
           </button>
         </div>
       </div>
+
+      {/* 🔥 MODAL PARA CRIAR PRODUTO - APENAS ADMIN */}
+      {isAdmin && (
+        <AdminModal
+          isOpen={modalCriarOpen}
+          onClose={() => setModalCriarOpen(false)}
+          onSave={handleCriarProduto}
+          title="Novo Produto"
+          fields={camposProduto}
+          initialData={{
+            nome: '',
+            preco: '',
+            categoria: 'biblias',
+            descricao: '',
+            imagem: '',
+          }}
+        />
+      )}
+
+      <style>{`
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   )
 }
