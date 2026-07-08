@@ -513,7 +513,7 @@ export default function Comunidade() {
           </div>
         </div>
 
-        {/* CARDS - Grid Responsivo */}
+        {/* CARDS - Grid Responsivo com ALINHAMENTO PERFEITO */}
         {comunidadesFiltradas.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px', background: 'white', borderRadius: '18px' }}>
             <AlertCircle size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
@@ -546,8 +546,9 @@ export default function Comunidade() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '20px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '24px',
+            alignItems: 'stretch', // 🔥 FORÇA TODOS OS CARDS TEREM A MESMA ALTURA
           }}>
             {comunidadesFiltradas.map((com) => {
               const isParticipando = comunidadesUsuario.includes(com.id);
@@ -560,11 +561,15 @@ export default function Comunidade() {
                   style={{
                     background: '#fff',
                     borderRadius: '18px',
-                    padding: '20px',
+                    padding: '24px',
                     border: '1px solid #e7e5e4',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                     transition: 'box-shadow 0.3s, transform 0.3s',
                     position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column', // 🔥 COLUNA PARA O CONTEÚDO
+                    height: '100%', // 🔥 ALTURA 100% DO CARD
+                    minHeight: '320px', // 🔥 ALTURA MÍNIMA
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.08)';
@@ -578,74 +583,57 @@ export default function Comunidade() {
                   {isCriador && (
                     <div style={{
                       position: 'absolute',
-                      top: '10px',
-                      right: '10px',
+                      top: '12px',
+                      right: '12px',
                       background: '#8b5e3c',
                       color: 'white',
-                      padding: '3px 10px',
+                      padding: '4px 12px',
                       borderRadius: '100px',
-                      fontSize: '10px',
+                      fontSize: '11px',
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px',
+                      zIndex: 2,
                     }}>
                       👑 Criador
                     </div>
                   )}
 
-                  {isCriador && (
-                    <button
-                      onClick={() => handleDeletarComunidade(com)}
-                      style={{
-                        position: 'absolute',
-                        bottom: '10px',
-                        right: '10px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#dc2626',
-                        cursor: 'pointer',
-                        padding: '6px',
-                        borderRadius: '8px',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      title="Deletar comunidade"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
+                  {/* ÍCONE - CENTRALIZADO E ALINHADO */}
                   <div style={{
-                    width: '50px',
-                    height: '50px',
+                    width: '56px',
+                    height: '56px',
                     background: com.cor || '#8b5e3c',
-                    borderRadius: '12px',
+                    borderRadius: '14px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    marginBottom: '14px',
+                    marginBottom: '16px',
+                    flexShrink: 0, // 🔥 NÃO ENCOLHE
                   }}>
-                    <IconComponent size={24} />
+                    <IconComponent size={26} />
                   </div>
 
+                  {/* NOME */}
                   <h2 style={{
-                    fontSize: '18px',
+                    fontSize: '20px',
                     color: '#0f172a',
-                    marginBottom: '8px',
-                    fontWeight: '600',
+                    marginBottom: '6px',
+                    fontWeight: '700',
+                    lineHeight: 1.3,
                   }}>
                     {com.nome}
                   </h2>
 
+                  {/* INFO - MEMBROS E WHATSAPP */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
                     color: '#64748b',
-                    marginBottom: '10px',
+                    marginBottom: '12px',
                     fontSize: '13px',
                     flexWrap: 'wrap',
                   }}>
@@ -659,15 +647,18 @@ export default function Comunidade() {
                     )}
                   </div>
 
+                  {/* DESCRIÇÃO - CRESCE PARA OCUPAR ESPAÇO */}
                   <p style={{
                     color: '#475569',
                     lineHeight: '1.6',
                     marginBottom: '16px',
                     fontSize: '14px',
+                    flex: 1, // 🔥 OCUPA O ESPAÇO DISPONÍVEL
                   }}>
                     {com.descricao}
                   </p>
 
+                  {/* BOTÃO - SEMPRE NO FINAL */}
                   <button
                     onClick={() => handleParticipar(com)}
                     disabled={participando[com.id]}
@@ -684,9 +675,11 @@ export default function Comunidade() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
+                      gap: '8px',
                       transition: 'all 0.3s',
                       opacity: participando[com.id] ? 0.7 : 1,
+                      marginTop: 'auto', // 🔥 EMPURRA O BOTÃO PARA O FINAL
+                      flexShrink: 0, // 🔥 NÃO ENCOLHE
                     }}
                   >
                     {participando[com.id] ? (
@@ -703,6 +696,31 @@ export default function Comunidade() {
                       </>
                     )}
                   </button>
+
+                  {/* BOTÃO DELETAR - APENAS CRIADOR */}
+                  {isCriador && (
+                    <button
+                      onClick={() => handleDeletarComunidade(com)}
+                      style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        right: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s',
+                        zIndex: 2,
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      title="Deletar comunidade"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               );
             })}
