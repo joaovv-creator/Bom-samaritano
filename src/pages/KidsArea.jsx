@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../contexts/AuthContext';
+import { adminService } from '../services/adminService';
+import { AdminModal } from '../components/AdminModal';
+import Swal from 'sweetalert2';
 import {
   Star,
   Play,
@@ -12,7 +16,6 @@ import {
   Heart,
   Film,
   Brain,
-  ArrowRight,
   Clock,
   Tag,
   X,
@@ -21,85 +24,172 @@ import {
   Users,
   Smile,
   Rocket,
-  Gift,
   Lightbulb,
-  Globe
+  Globe,
+  Loader2,
+  PlusCircle
 } from 'lucide-react';
+
+// Mapeamento de ícones para exibição
+const iconMap = {
+  Film: Film,
+  Gamepad2: Gamepad2,
+  BookOpen: BookOpen,
+  Music2: Music2,
+  Ship: Ship,
+  Brain: Brain,
+  Star: Star,
+  Heart: Heart,
+  Globe: Globe,
+  Sparkles: Sparkles,
+  Users: Users,
+  Smile: Smile,
+  Rocket: Rocket,
+  Play: Play,
+  Award: Award
+};
 
 function KidsArea() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [atividades, setAtividades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [atividadeAtiva, setAtividadeAtiva] = useState(null);
+  const [modalCriarOpen, setModalCriarOpen] = useState(false);
+  const [deletando, setDeletando] = useState({});
+  const [carregandoAdmin, setCarregandoAdmin] = useState(true);
 
-  const atividades = [
-    {
-      id: 1,
-      titulo: "História de Davi e Golias",
-      tipo: "Vídeo",
-      duracao: "15 min",
-      icon: Film,
-      cor: "#3b82f6",
-      link: "https://youtu.be/_Nv-3oOz3bY",
-      bgCor: "#eff6ff",
-    },
-    {
-      id: 2,
-      titulo: "Jogo da Memória Bíblico",
-      tipo: "Jogo",
-      duracao: "Livre",
-      icon: Gamepad2,
-      cor: "#9a6649",
-      link: "",
-      bgCor: "#f5f0eb",
-    },
-    {
-      id: 3,
-      titulo: "Histórias da Bíblia",
-      tipo: "Leitura",
-      duracao: "10 min",
-      icon: BookOpen,
-      cor: "#22c55e",
-      link: "",
-      bgCor: "#f0fdf4",
-    },
-    {
-      id: 4,
-      titulo: "Músicas de Adoração",
-      tipo: "Música",
-      duracao: "5 min",
-      icon: Music2,
-      cor: "#ff6b35",
-      link: "https://youtu.be/DWGIkpyl9Rg?list=RDDWGIkpyl9Rg",
-      bgCor: "#fff7ed",
-    },
-    {
-      id: 5,
-      titulo: "A Arca de Noé",
-      tipo: "Vídeo",
-      duracao: "12 min",
-      icon: Ship,
-      cor: "#6d5bd0",
-      link: "https://youtu.be/Gz9IWzccNvI",
-      bgCor: "#f5f3ff",
-    },
-    {
-      id: 6,
-      titulo: "Quiz Bíblico",
-      tipo: "Jogo",
-      duracao: "Livre",
-      icon: Brain,
-      cor: "#ff3d7f",
-      link: "",
-      bgCor: "#fdf2f8",
-    },
-  ];
+  useEffect(() => {
+    carregarDados();
+    verificarAdmin();
+  }, [user]);
+
+  const verificarAdmin = async () => {
+    try {
+      setCarregandoAdmin(true);
+      if (user) {
+        const admin = await adminService.isAdmin(user.id);
+        setIsAdmin(admin);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar admin:', error);
+      setIsAdmin(false);
+    } finally {
+      setCarregandoAdmin(false);
+    }
+  };
+
+  const carregarDados = async () => {
+    try {
+      setLoading(true);
+      const dados = await adminService.getAtividades();
+      setAtividades(dados || []);
+    } catch (error) {
+      console.error('Erro ao carregar atividades:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: 'Não foi possível carregar as atividades.',
+        confirmButtonColor: '#8b5e3c',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCriarAtividade = async (dados) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem criar atividades.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      return;
+    }
+
+    try {
+      const novaAtividade = await adminService.criarAtividade(dados);
+      setAtividades(prev => [...prev, novaAtividade]);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Atividade criada!',
+        text: `"${novaAtividade.titulo}" foi adicionada com sucesso.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      });
+    } catch (error) {
+      console.error('Erro ao criar atividade:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível criar a atividade.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      throw error;
+    }
+  };
+
+  const handleDeletarAtividade = async (id, titulo) => {
+    if (!isAdmin) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Acesso negado!',
+        text: 'Apenas administradores podem deletar atividades.',
+        confirmButtonColor: '#8b5e3c',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: `Você está prestes a deletar "${titulo}". Esta ação não pode ser desfeita!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setDeletando(prev => ({ ...prev, [id]: true }));
+      await adminService.deletarAtividade(id);
+      setAtividades(prev => prev.filter(a => a.id !== id));
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Deletada!',
+        text: `"${titulo}" foi removida.`,
+        timer: 2000,
+        showConfirmButton: true,
+        confirmButtonColor: '#8b5e3c',
+      });
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: error.message || 'Não foi possível deletar a atividade.',
+        confirmButtonColor: '#8b5e3c',
+      });
+    } finally {
+      setDeletando(prev => ({ ...prev, [id]: false }));
+    }
+  };
 
   const abrirAtividade = (atividade) => {
     if (atividade.link && atividade.link.startsWith("http")) {
       window.open(atividade.link, "_blank");
       return;
-    }
-    if (atividade.link) {
-      navigate(atividade.link);
     }
     setAtividadeAtiva(atividade);
   };
@@ -108,7 +198,35 @@ function KidsArea() {
     setAtividadeAtiva(null);
   };
 
-  // Estilos
+  const camposAtividade = [
+    { name: 'titulo', label: 'Título', type: 'text', placeholder: 'Ex: História de Davi e Golias', required: true },
+    { name: 'tipo', label: 'Tipo', type: 'select', options: [
+      { value: 'Vídeo', label: 'Vídeo' },
+      { value: 'Jogo', label: 'Jogo' },
+      { value: 'Leitura', label: 'Leitura' },
+      { value: 'Música', label: 'Música' },
+    ], required: true },
+    { name: 'duracao', label: 'Duração', type: 'text', placeholder: 'Ex: 15 min ou Livre', required: true },
+    { name: 'link', label: 'Link (opcional)', type: 'text', placeholder: 'https://youtu.be/...' },
+    { name: 'emoji', label: 'Emoji', type: 'text', placeholder: '⭐', required: true },
+    { name: 'cor', label: 'Cor', type: 'text', placeholder: '#3b82f6', required: true },
+    { name: 'bg_cor', label: 'Cor de Fundo', type: 'text', placeholder: '#eff6ff', required: true },
+    { name: 'icone', label: 'Ícone', type: 'select', options: [
+      { value: 'Film', label: 'Filme' },
+      { value: 'Gamepad2', label: 'Gamepad' },
+      { value: 'BookOpen', label: 'Livro' },
+      { value: 'Music2', label: 'Música' },
+      { value: 'Ship', label: 'Navio' },
+      { value: 'Brain', label: 'Cérebro' },
+      { value: 'Heart', label: 'Coração' },
+      { value: 'Star', label: 'Estrela' },
+      { value: 'Sparkles', label: 'Brilho' },
+      { value: 'Globe', label: 'Globo' },
+      { value: 'Play', label: 'Play' },
+      { value: 'Award', label: 'Prêmio' },
+    ], required: true },
+  ];
+
   const styles = {
     container: {
       background: "#f7f4ed",
@@ -171,6 +289,7 @@ function KidsArea() {
       alignItems: "center",
       gap: "14px",
       marginBottom: "30px",
+      flexWrap: "wrap",
     },
     sectionTitle: {
       fontSize: "34px",
@@ -201,6 +320,7 @@ function KidsArea() {
       transition: "all 0.3s ease",
       cursor: "pointer",
       position: "relative",
+      overflow: "hidden",
     },
     cardHover: {
       transform: "translateY(-6px)",
@@ -260,11 +380,12 @@ function KidsArea() {
       right: "16px",
       background: cor,
       color: "white",
-      padding: "4px 10px",
+      padding: "4px 12px",
       borderRadius: "100px",
       fontSize: "11px",
       fontWeight: "600",
       letterSpacing: "0.3px",
+      zIndex: 1,
     }),
     tipBox: {
       background: "linear-gradient(135deg, #fef9e7, #fef3c7)",
@@ -357,10 +478,17 @@ function KidsArea() {
     },
   };
 
+  if (loading || carregandoAdmin) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f2ea' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#8b5e3c' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        {/* HEADER */}
         <div style={styles.header}>
           <div style={styles.headerDecor}>✨</div>
           <div style={styles.headerDecor}>
@@ -393,73 +521,184 @@ function KidsArea() {
           </div>
         </div>
 
-        {/* TÍTULO DA SEÇÃO - FOGUETE ALINHADO */}
         <div style={styles.sectionHeader}>
           <Rocket size={28} color="#9a6649" style={{ flexShrink: 0 }} />
           <h2 style={styles.sectionTitle}>Atividades Disponíveis</h2>
           <div style={styles.sectionDivider} />
+          
+          {isAdmin && (
+            <button
+              onClick={() => setModalCriarOpen(true)}
+              style={{
+                background: '#8b5e3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '10px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#6b3f2a'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#8b5e3c'}
+            >
+              <PlusCircle size={20} />
+              Adicionar Atividade
+            </button>
+          )}
         </div>
 
-        {/* GRID DE ATIVIDADES */}
-        <div style={styles.grid}>
-          {atividades.map((atv) => {
-            const IconComponent = atv.icon || Star;
-            const isInteractive = atv.link && atv.link.startsWith("http");
-
-            return (
-              <div
-                key={atv.id}
-                style={styles.card}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = styles.cardHover.transform;
-                  e.currentTarget.style.boxShadow = styles.cardHover.boxShadow;
+        {atividades.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '18px' }}>
+            <Sparkles size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+            <p style={{ color: '#64748b', fontSize: '18px' }}>
+              Nenhuma atividade disponível ainda.
+            </p>
+            {isAdmin && (
+              <button
+                onClick={() => setModalCriarOpen(true)}
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 24px',
+                  background: '#8b5e3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '15px',
+                  transition: 'all 0.3s',
                 }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
-                }}
-                onClick={() => abrirAtividade(atv)}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#6b3f2a'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#8b5e3c'}
               >
-                <div style={styles.badge(atv.cor)}>
-                  {isInteractive ? "▶ Disponível" : "Em breve"}
+                <PlusCircle size={18} style={{ marginRight: '8px' }} />
+                Criar primeira atividade
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={styles.grid}>
+            {atividades.map((atv) => {
+              const IconComponent = iconMap[atv.icone] || Star;
+              const isInteractive = atv.link && atv.link.startsWith("http");
+
+              return (
+                <div
+                  key={atv.id}
+                  style={styles.card}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = styles.cardHover.transform;
+                    e.currentTarget.style.boxShadow = styles.cardHover.boxShadow;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
+                  }}
+                  onClick={() => abrirAtividade(atv)}
+                >
+                  {/* 🔥 BOTÃO DELETAR - CANTO SUPERIOR DIREITO */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletarAtividade(atv.id, atv.titulo);
+                      }}
+                      disabled={deletando[atv.id]}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: 'rgba(220, 38, 38, 0.9)',
+                        border: 'none',
+                        color: 'white',
+                        cursor: deletando[atv.id] ? 'not-allowed' : 'pointer',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        transition: 'all 0.2s',
+                        zIndex: 10,
+                        width: '28px',
+                        height: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: deletando[atv.id] ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#dc2626';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(220, 38, 38, 0.9)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {deletando[atv.id] ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <X size={16} />
+                      )}
+                    </button>
+                  )}
+
+                  {/* 🔥 BADGE - POSIÇÃO AJUSTADA */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '50px',
+                    background: atv.cor,
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '100px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    letterSpacing: '0.3px',
+                    zIndex: 1,
+                  }}>
+                    {isInteractive ? "Disponível" : "Em breve"}
+                  </div>
+
+                  <div style={styles.iconBox(atv.cor, atv.bg_cor)}>
+                    <IconComponent size={28} />
+                  </div>
+
+                  <h3 style={styles.cardTitle}>
+                    {atv.titulo}
+                  </h3>
+
+                  <div style={styles.cardFooter}>
+                    <span style={styles.tag(atv.cor)}>
+                      <Tag size={14} />
+                      {atv.tipo}
+                    </span>
+                    <span style={styles.duracao}>
+                      <Clock size={14} />
+                      {atv.duracao}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    position: "absolute",
+                    bottom: "16px",
+                    right: "16px",
+                    color: "#cbd5e1",
+                    transition: "all 0.3s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "#9a6649"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "#cbd5e1"}>
+                    <ChevronRight size={20} />
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                <div style={styles.iconBox(atv.cor, atv.bgCor)}>
-                  <IconComponent size={28} />
-                </div>
-
-                <h3 style={styles.cardTitle}>
-                  {atv.titulo}
-                </h3>
-
-                <div style={styles.cardFooter}>
-                  <span style={styles.tag(atv.cor)}>
-                    <Tag size={14} />
-                    {atv.tipo}
-                  </span>
-                  <span style={styles.duracao}>
-                    <Clock size={14} />
-                    {atv.duracao}
-                  </span>
-                </div>
-
-                <div style={{
-                  position: "absolute",
-                  bottom: "16px",
-                  right: "16px",
-                  color: "#cbd5e1",
-                  transition: "all 0.3s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#9a6649"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "#cbd5e1"}>
-                  <ChevronRight size={20} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* DICA PARA OS PAIS */}
         <div style={styles.tipBox}>
           <div style={styles.tipTitle}>
             <Lightbulb size={28} color="#d97706" />
@@ -522,7 +761,6 @@ function KidsArea() {
           </div>
         </div>
 
-        {/* MODAL */}
         {atividadeAtiva && (
           <div style={styles.modalOverlay} onClick={fecharModal}>
             <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -597,6 +835,26 @@ function KidsArea() {
             </div>
           </div>
         )}
+
+        {isAdmin && (
+          <AdminModal
+            isOpen={modalCriarOpen}
+            onClose={() => setModalCriarOpen(false)}
+            onSave={handleCriarAtividade}
+            title="Nova Atividade"
+            fields={camposAtividade}
+            initialData={{
+              titulo: '',
+              tipo: 'Vídeo',
+              duracao: '',
+              link: '',
+              emoji: '⭐',
+              cor: '#3b82f6',
+              bg_cor: '#eff6ff',
+              icone: 'Film'
+            }}
+          />
+        )}
       </div>
 
       <style>{`
@@ -613,6 +871,13 @@ function KidsArea() {
             opacity: 1;
             transform: translateY(0) scale(1);
           }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         ::-webkit-scrollbar {
           width: 6px;
